@@ -19,3 +19,8 @@ dist/
 /test-results/
 /playwright-report/
 *.log
+
+.venv-*/
+*.egg-info/
+build/
+out-*/
