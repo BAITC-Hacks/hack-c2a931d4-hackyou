@@ -2,7 +2,7 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
 from backend.app.analysis_schemas import AnalysisCreate, AnalysisPage, AnalysisRead, EventRead
@@ -24,6 +24,7 @@ from backend.app.schemas import (
 )
 from backend.app.services.cases import CaseService
 from backend.app.services.datasets import DatasetService
+from backend.app.services.excel import excel_report
 from backend.app.services.insights import InsightService
 
 router = APIRouter(prefix="/api/v1")
@@ -138,6 +139,15 @@ def download_export(analysis_id: UUID, filename: str, request: Request):
     path = request.app.state.analyses.download(str(analysis_id), filename)
     media_type = "application/json" if filename.endswith(".json") else "text/csv; charset=utf-8"
     return FileResponse(path, filename=filename, media_type=media_type)
+
+
+@router.get("/analyses/{analysis_id}/excel")
+def download_excel(analysis_id: UUID, request: Request):
+    return Response(
+        excel_report(request.app.state.analyses, str(analysis_id)),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="tracegraph-{analysis_id}.xlsx"'},
+    )
 
 
 @router.get("/analyses/{analysis_id}/insights", response_model=AnalysisInsights)
