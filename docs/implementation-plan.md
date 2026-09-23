@@ -13,3 +13,7 @@ Each checkpoint has focused checks, a reviewed diff and its own commit. Stage on
 9. Submission verification: clean setup, real data, end-to-end flow, README and demo.
 
 The current repository initially contains only team placeholders. Real parquet input files are not included in the supplied starter archive. Synthetic fixtures can validate plumbing but cannot establish correctness of AML outputs or performance on the actual dataset.
+
+## Completed foundation
+
+Checkpoints 1–3 are implemented. Backend import/persistence checks and frontend file-selection checks run locally. Browser verification covers creating a clearly labeled synthetic case, uploading all three files, displaying a quality report and reloading the saved case. The real analysis/agent integration remains pending.

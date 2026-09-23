@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -11,8 +12,8 @@ class Settings(BaseSettings):
     )
 
     storage_dir: Path = PROJECT_ROOT / "storage"
-    max_file_bytes: int = 50 * 1024 * 1024
-    max_table_rows: int = 1_000_000
+    max_file_bytes: int = Field(default=50 * 1024 * 1024, gt=0)
+    max_table_rows: int = Field(default=1_000_000, gt=0)
 
     @property
     def storage_path(self) -> Path:

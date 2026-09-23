@@ -16,6 +16,7 @@ def main():
     if npm is None or not (ROOT / "frontend/node_modules").is_dir():
         raise SystemExit("Run npm ci in frontend before starting the app.")
     processes = []
+    exit_code = 0
     creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
     try:
         processes.append(
@@ -32,6 +33,7 @@ def main():
                 ],
                 cwd=ROOT,
                 creationflags=creationflags,
+                start_new_session=os.name != "nt",
             )
         )
         processes.append(
@@ -39,11 +41,16 @@ def main():
                 [npm, "run", "dev"],
                 cwd=ROOT / "frontend",
                 creationflags=creationflags,
+                start_new_session=os.name != "nt",
             )
         )
         print("TraceGraph: http://127.0.0.1:5173 | API: http://127.0.0.1:8000/docs", flush=True)
         while all(process.poll() is None for process in processes):
             time.sleep(0.5)
+        exit_code = (
+            next((process.returncode for process in processes if process.returncode is not None), 1)
+            or 1
+        )
     except KeyboardInterrupt:
         pass
     finally:
@@ -57,12 +64,13 @@ def main():
                     check=False,
                 )
             else:
-                process.send_signal(signal.SIGTERM)
+                os.killpg(process.pid, signal.SIGTERM)
             try:
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 process.kill()
+    return exit_code
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
