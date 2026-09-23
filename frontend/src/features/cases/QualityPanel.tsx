@@ -1,4 +1,4 @@
-import { CircleHelp, Network, ShieldCheck } from 'lucide-react';
+import { CircleHelp, ShieldCheck } from 'lucide-react';
 import type { Dataset } from '../../api';
 import { date, count } from '../../format';
 import { fileSize, formatMoney } from '../../files';
@@ -74,16 +74,6 @@ export function QualityPanel({ dataset }: { dataset: Dataset }) {
           ))}
         </div>
       </section>
-      <div className="next-stage">
-        <Network size={22} />
-        <div>
-          <strong>Следующий этап — анализ сети</strong>
-          <p>
-            Подключение ML-движка ещё не реализовано. Роли, кластеры и приоритеты появятся после
-            интеграции.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

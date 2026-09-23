@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from backend.app.analysis_schemas import AnalysisPage, AnalysisRead, EventRead
+from backend.app.analysis_schemas import AnalysisCreate, AnalysisPage, AnalysisRead, EventRead
 from backend.app.repositories import CaseRepository
 from backend.app.schemas import (
     CaseCreate,
@@ -105,6 +105,11 @@ def list_analyses(
     return request.app.state.analyses.list_analyses(str(dataset_id), limit, offset)
 
 
+@router.post("/datasets/{dataset_id}/analyses", response_model=AnalysisRead, status_code=202)
+def start_analysis(dataset_id: UUID, payload: AnalysisCreate, request: Request):
+    return request.app.state.analyses.start(str(dataset_id), str(payload.request_key))
+
+
 @router.get("/analyses/{analysis_id}", response_model=AnalysisRead)
 def get_analysis(analysis_id: UUID, request: Request):
     return request.app.state.analyses.get(str(analysis_id))
@@ -123,4 +128,5 @@ def cancel_analysis(analysis_id: UUID, request: Request):
 @router.get("/analyses/{analysis_id}/exports/{filename}")
 def download_export(analysis_id: UUID, filename: str, request: Request):
     path = request.app.state.analyses.download(str(analysis_id), filename)
-    return FileResponse(path, filename=filename, media_type="text/csv; charset=utf-8")
+    media_type = "application/json" if filename.endswith(".json") else "text/csv; charset=utf-8"
+    return FileResponse(path, filename=filename, media_type=media_type)

@@ -8,6 +8,7 @@ import { ErrorMessage } from '../../components/ErrorMessage';
 import { ImportPanel } from './ImportPanel';
 import { QualityPanel } from './QualityPanel';
 import { Status } from './Status';
+import { AnalysisPanel } from '../analysis/AnalysisPanel';
 
 export function CaseWorkspace() {
   const { caseId = '' } = useParams();
@@ -46,6 +47,11 @@ export function CaseWorkspace() {
             <span className="active">
               <Layers3 size={16} /> Данные кейса
             </span>
+            {dataset && (
+              <a href="#analysis" className="analysis-jump">
+                Анализ и результаты ↓
+              </a>
+            )}
             <span className="tab-note">Создан {date(item.created_at)}</span>
           </div>
           {item.datasets.length > 1 && (
@@ -92,6 +98,7 @@ export function CaseWorkspace() {
               </div>
             )}
           </div>
+          {dataset && <AnalysisPanel key={dataset.id} dataset={dataset} />}
         </>
       )}
     </>

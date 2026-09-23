@@ -46,6 +46,41 @@ export interface Health {
   status: string;
   engine: string;
   limits: { max_file_bytes: number };
+  capabilities: { analysis: boolean; result_import: boolean };
+}
+
+export type AnalysisStatus =
+  'queued' | 'running' | 'validating' | 'succeeded' | 'failed' | 'cancelled' | 'interrupted';
+export interface Analysis {
+  id: string;
+  case_id: string;
+  dataset_id: string;
+  source: 'command' | 'uploaded_csv';
+  engine_label: string;
+  status: AnalysisStatus;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  error_message: string | null;
+  files: Dataset['files'];
+  summary: {
+    n_nodes: number;
+    n_clusters: number;
+    n_ranked: number;
+    role_counts: Record<string, number>;
+    top_nodes: { rank: number; gid: string; role: string; priority_score: number; why: string }[];
+    warnings: string[];
+    model_backend: string | null;
+    fallback_reason: string | null;
+    elapsed_seconds: number | null;
+    engine_analysis_id: string | null;
+  } | null;
+}
+export interface AnalysisEvent {
+  id: number;
+  status: AnalysisStatus;
+  message: string;
+  created_at: string;
 }
 
 export class ApiError extends Error {
@@ -79,6 +114,25 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<Health>('/health'),
+  listAnalyses: (datasetId: string, offset: number) =>
+    request<{ items: Analysis[]; total: number }>(
+      `/datasets/${datasetId}/analyses?limit=10&offset=${offset}`,
+    ),
+  getAnalysis: (id: string) => request<Analysis>(`/analyses/${id}`),
+  analysisEvents: (id: string) => request<AnalysisEvent[]>(`/analyses/${id}/events`),
+  startAnalysis: (datasetId: string, requestKey: string) =>
+    request<Analysis>(`/datasets/${datasetId}/analyses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request_key: requestKey }),
+    }),
+  cancelAnalysis: (id: string) => request<Analysis>(`/analyses/${id}/cancel`, { method: 'POST' }),
+  importResults: (datasetId: string, requestKey: string, files: Record<string, File>) => {
+    const body = new FormData();
+    body.append('request_key', requestKey);
+    Object.entries(files).forEach(([key, file]) => body.append(key, file));
+    return request<Analysis>(`/datasets/${datasetId}/results`, { method: 'POST', body });
+  },
   listCases: (search: string, offset: number) =>
     request<CasePage>(`/cases?search=${encodeURIComponent(search)}&offset=${offset}&limit=12`),
   getCase: (id: string) => request<CaseDetail>(`/cases/${encodeURIComponent(id)}`),

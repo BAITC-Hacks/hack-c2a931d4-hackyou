@@ -71,11 +71,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health():
         with app.state.database.engine.connect() as connection:
             connection.execute(text("SELECT 1"))
+        engine_ready = app.state.analyses.engine.available()
         return {
             "status": "ok",
             "storage": "sqlite",
-            "engine": "not_connected",
-            "capabilities": {"analysis": False, "result_import": True},
+            "engine": "configured" if engine_ready else "not_connected",
+            "capabilities": {"analysis": engine_ready, "result_import": True},
             "limits": {"max_file_bytes": settings.max_file_bytes},
         }
 

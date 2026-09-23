@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
@@ -9,6 +10,10 @@ AnalysisStatus = Literal[
     "queued", "running", "validating", "succeeded", "failed", "cancelled", "interrupted"
 ]
 ACTIVE_STATUSES = ("queued", "running", "validating")
+
+
+class AnalysisCreate(BaseModel):
+    request_key: UUID
 
 
 class TopNode(BaseModel):
@@ -26,6 +31,10 @@ class AnalysisSummary(BaseModel):
     role_counts: dict[str, int]
     top_nodes: list[TopNode]
     warnings: list[str]
+    model_backend: str | None = None
+    fallback_reason: str | None = None
+    elapsed_seconds: float | None = None
+    engine_analysis_id: str | None = None
 
 
 class AnalysisRead(BaseModel):
