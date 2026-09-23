@@ -201,7 +201,7 @@ class TraceGraph:
         node = deepcopy(self._node(gid))
         node["schema_version"] = SCHEMA_VERSION
         node["analysis_id"] = self._analysis["analysis_id"]
-        node["best_next_evidence"] = best_next_evidence(node)
+        node["best_next_evidence"] = best_next_evidence(node, context_available=True)
         return node
 
     def get_top_nodes(self, limit=20) -> list[dict]:
@@ -235,7 +235,7 @@ class TraceGraph:
 
     def start_investigation(self, gid) -> dict:
         from .investigation import start
-        return start(self._node(gid), self._analysis["analysis_id"], self._result_hash)
+        return start(self._node(gid), self._analysis["analysis_id"], self._result_hash, context=self)
 
     def continue_investigation(self, branch_state) -> dict:
         from .investigation import continue_branch
@@ -243,4 +243,4 @@ class TraceGraph:
         if not isinstance(branch_state, dict) or "target_gid" not in branch_state:
             raise InvestigationStateError("branch_state must contain target_gid")
         node = self._node(branch_state["target_gid"])
-        return continue_branch(branch_state, node, self._analysis["analysis_id"], self._result_hash)
+        return continue_branch(branch_state, node, self._analysis["analysis_id"], self._result_hash, context=self)

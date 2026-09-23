@@ -42,6 +42,11 @@ def test_restore_without_retraining_and_detect_corrupt_artifact(snapshot, monkey
     assert restored.get_analysis() == original.get_analysis()
     assert restored.explain_node(B) == original.explain_node(B)
     assert restored.get_transactions()["total"] == 6
+    branch = original.start_investigation(A)
+    while branch["status"] == "checkpoint":
+        branch = restored.continue_investigation(branch)
+    assert branch["status"] == "complete" and branch["total_passes"] <= 5
+    assert restored.get_analysis() == original.get_analysis()
     restored.save_analysis(tmp_path)
     assert TraceGraph.load_analysis(tmp_path).get_graph() == original.get_graph()
     with (tmp_path / "transactions_bundle.json").open("a", encoding="utf-8") as stream:
