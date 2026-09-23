@@ -11,7 +11,7 @@ from .evidence import date_range
 from .serialization import ENGINE_VERSION, SCHEMA_VERSION, canonical_hash, parse_gid, write_json
 
 SNAPSHOT_VERSION = 1
-SUPPORTED_ANALYSIS_VERSIONS = {"0.2.0", ENGINE_VERSION}
+SUPPORTED_ANALYSIS_VERSIONS = {"0.2.0", "0.3.0", ENGINE_VERSION}
 BUNDLE_NAMES = ("analysis_bundle", "graph_bundle", "validation_report", "model_info", "transactions_bundle")
 ARTIFACT_NAMES = tuple(f"{name}.json" for name in BUNDLE_NAMES) + (
     "nodes_roles.csv", "clusters.csv", "top_nodes.csv")
@@ -67,9 +67,14 @@ def load_snapshot(directory):
             if bundle["analysis_id"] != manifest["analysis_id"] or bundle["schema_version"] != SCHEMA_VERSION:
                 raise ValueError(f"Inconsistent analysis header: {name}")
         analysis = bundles["analysis_bundle"]
-        config = AnalysisConfig(**analysis["metadata"]["config"]).to_dict()
         if analysis["metadata"]["engine_version"] != manifest["engine_version"]:
             raise ValueError("Inconsistent engine version")
+        # Runtime defaults must not rewrite saved metadata: investigation replay
+        # authenticates the original analysis and must retain its role methodology.
+        settings = dict(analysis["metadata"]["config"])
+        settings.setdefault("role_methodology_version", 1 if manifest["engine_version"] in {
+            "0.2.0", "0.3.0"} else 2)
+        config = AnalysisConfig(**settings).to_dict()
         result_hash = canonical_hash({"nodes": analysis["nodes"], "clusters": analysis["clusters"]})
         if result_hash != manifest["result_fingerprint"] or result_hash != analysis["result_fingerprint"]:
             raise ValueError("Result fingerprint does not match analysis")

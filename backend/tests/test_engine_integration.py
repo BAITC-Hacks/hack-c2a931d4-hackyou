@@ -40,7 +40,7 @@ def test_real_engine_analysis_snapshot_downloads_and_reopen(tmp_path):
             path.read_text(encoding="utf-8") for path in settings.storage_path.rglob("engine.log")
         ]
         assert run["status"] == "succeeded", (run, logs)
-        assert run["engine_label"] == "TraceGraph AI 0.3.0"
+        assert run["engine_label"] == "TraceGraph AI 0.3.1"
         assert len(run["files"]) == 9
         assert len(run["summary"]["top_nodes"]) == 20
         assert (
@@ -54,7 +54,7 @@ def test_real_engine_analysis_snapshot_downloads_and_reopen(tmp_path):
             assert len(response.content) == item["size_bytes"]
         manifest = client.get(f"/api/v1/analyses/{analysis_id}/exports/manifest.json").json()
         analysis = client.get(f"/api/v1/analyses/{analysis_id}/exports/analysis_bundle.json").json()
-        assert manifest["engine_version"] == analysis["metadata"]["engine_version"] == "0.3.0"
+        assert manifest["engine_version"] == analysis["metadata"]["engine_version"] == "0.3.1"
         root = f"/api/v1/analyses/{analysis_id}"
         insights = client.get(root + "/insights").json()
         assert (
