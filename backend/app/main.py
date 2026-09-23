@@ -9,6 +9,8 @@ from backend.app.api import router
 from backend.app.config import Settings
 from backend.app.database import Database
 from backend.app.errors import AppError
+from backend.app.services.analyses import AnalysisService
+from backend.app.storage_lock import StorageLock
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -16,12 +18,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        lease = StorageLock(settings.storage_path)
         database = Database(settings.storage_path)
-        database.migrate()
-        app.state.database = database
-        app.state.settings = settings
-        yield
-        database.close()
+        analyses = None
+        try:
+            database.migrate()
+            analyses = AnalysisService(database, settings)
+            app.state.database = database
+            app.state.settings = settings
+            app.state.analyses = analyses
+            yield
+        finally:
+            if analyses is not None:
+                analyses.close()
+            database.close()
+            lease.close()
 
     app = FastAPI(title="TraceGraph API", version="0.1.0", lifespan=lifespan)
     app.include_router(router)
@@ -64,6 +75,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "status": "ok",
             "storage": "sqlite",
             "engine": "not_connected",
+            "capabilities": {"analysis": False, "result_import": True},
             "limits": {"max_file_bytes": settings.max_file_bytes},
         }
 
