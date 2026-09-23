@@ -2,27 +2,27 @@
 
 ## Agreed scope
 
-Local AML investigation workspace: FastAPI, React/TypeScript, SQLite and files on disk. SQLite runs inside the backend; no database server or container is required. HTTP requests identify their case, analysis or branch explicitly. Persistent data survives application restarts.
+Local AML analysis workspace: FastAPI, React/TypeScript, SQLite and files on disk. SQLite runs inside the backend; no database server or container is required. HTTP requests identify their case, dataset or analysis explicitly. Cases, datasets, analysis runs and events survive application restarts. SDK investigation branches and enriched dossiers do not yet have backend persistence or web screens.
 
 The team member owns everything under ml/: metrics, role assignment, ranking, clustering and the AI agent. Fullstack code must not modify ml/ or reimplement AML decisions.
 
 ## Boundaries
 
-- frontend: case history, import, graph explorer, profiles, evidence and investigation controls.
-- backend/api: HTTP validation and responses.
-- backend/services: case lifecycle, dataset validation, orchestration and queries.
-- backend/repositories: persistence through SQLAlchemy.
-- backend/integrations: translate the real ML interface into application contracts.
-- backend/jobs (later): execute engine calls outside request handling and publish persisted events.
+- frontend: case history, import, analysis progress, summaries, graph explorer, profiles and evidence; investigation controls are future work.
+- backend/app/api.py: HTTP validation and responses.
+- backend/app/services: case lifecycle, dataset validation, analysis jobs and result queries.
+- backend/app/repositories.py and models.py: persistence through SQLAlchemy.
+- backend/app/services/engine.py: run the installed ML engine in a separate process and translate progress into application events.
+- backend/app/services/analyses.py: queue engine calls outside request handling, persist job status and events, and publish validated snapshots.
 - storage: SQLite metadata, original parquet files and immutable analysis artifacts; excluded from Git.
 
-Data flow: three parquet files -> structural validation -> saved dataset -> ML analysis -> validated analysis snapshot -> graph/profile queries and CSV exports -> optional investigation branches.
+Implemented data flow: three parquet files -> structural validation -> saved dataset -> background ML analysis -> validated analysis snapshot -> graph/profile queries and CSV exports. Investigation branches and agent dossiers are available through the Python SDK; their platform integration is planned.
 
 ## Data ownership
 
-Case groups uploaded datasets and analysis runs. Each dataset contains nodes.parquet, edges.parquet and transactions.parquet. Uploads create new dataset IDs and never overwrite previous inputs. AnalysisRun references one dataset. InvestigationBranch references one analysis snapshot. AnalystDecision records a review decision without overwriting calculated roles or priority scores.
+Case groups uploaded datasets and analysis runs. Each dataset contains nodes.parquet, edges.parquet and transactions.parquet. Uploads create new dataset IDs and never overwrite previous inputs. AnalysisRun references one dataset and stores the lifecycle of its analysis job. AnalysisEvent stores progress and status changes for that run.
 
-SQLite stores cases, dataset metadata and quality reports initially. Analysis runs, jobs, branches, steps and decisions are added by migrations as those features are implemented. Large source tables and engine outputs remain files. In-memory caches are disposable and scoped by dataset/analysis ID.
+SQLite already stores cases, dataset metadata and quality reports, analysis runs/job state, and analysis events. Large source tables and engine outputs remain files. In-memory caches are disposable and scoped by dataset/analysis ID. Future InvestigationBranch records would reference one analysis snapshot; branch steps and AnalystDecision records would preserve review decisions separately from calculated roles and priority scores. Those objects are not implemented in the current database.
 
 ## Import guarantees
 
@@ -37,15 +37,17 @@ SQLite stores cases, dataset metadata and quality reports initially. Analysis ru
 
 JSON IDs are decimal strings to preserve int64 precision in JavaScript. Money is represented with decimal strings in API responses. Uploaded files are kept unchanged.
 
-## Investigation execution (planned)
+## Analysis execution
 
-Long-running requests return a job ID. A local worker performs analysis/agent calls; the API remains responsive. Each event is saved before publication over SSE. Reconnect resumes from the last event ID. A branch allows only one active advance operation. An interrupted engine call is marked interrupted, not silently restarted. Resume/cancellation depend on actual engine capabilities.
+An analysis request returns the persisted AnalysisRun ID. A single-worker ThreadPoolExecutor orchestrates a separate engine process; the API remains responsive. Status changes and progress events are saved in SQLite. React polls analysis and event endpoints while a job is active; SSE is not implemented. Cancellation stops the analysis process. On backend startup, unfinished runs are marked interrupted and are not silently restarted.
+
+Investigation execution is future platform work. It needs branch/step persistence, explicit user continuation after SDK checkpoints, and protection against concurrent advancement of one branch. SDK operations already support snapshot restore, replay-validated continuation and bounded dossier generation; current analysis jobs do not expose these as web actions.
 
 The UI never invents evidence, progress percentages, intermediate reasoning or hypotheses. Missing engine integration is displayed explicitly. Fixture data is available only in an explicit development/test mode.
 
 ## Frontend
 
-React + TypeScript + Vite. TanStack Query owns server data. Local view state belongs in components/Zustand when needed; selected case/node and navigable views belong in the URL. Cytoscape will handle directed graph rendering. A role calculated for a full dataset is not relabeled as a role calculated for a filtered time interval.
+React + TypeScript + Vite. TanStack Query owns server data, React Router selects case pages, and component state holds the selected analysis/node and local view controls. The implemented graph explorer renders a bounded one-hop neighborhood with SVG, directed arrows, node selection and zoom. A nearby profile shows the selected node's calculated role, flows and evidence. Investigation branches and enriched dossier screens are not implemented. Scores shown in a local neighborhood retain their full-analysis meaning.
 
 ## Local operation
 

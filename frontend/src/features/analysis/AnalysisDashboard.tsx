@@ -30,6 +30,9 @@ export function AnalysisDashboard({ run, dataset }: { run: Analysis; dataset: Da
   const [view, setView] = useState<'overview' | 'network'>('overview');
   const [focus, setFocus] = useState(run.summary?.top_nodes[0]?.gid ?? '');
   const hasGraph = run.files.some((file) => file.name === 'graph_bundle.json');
+  const downloadFiles = run.files.filter((file) =>
+    ['nodes_roles.csv', 'clusters.csv', 'top_nodes.csv'].includes(file.name),
+  );
   const overview = useQuery({
     queryKey: ['insights', run.id],
     queryFn: () => api.analysisInsights(run.id),
@@ -383,8 +386,8 @@ export function AnalysisDashboard({ run, dataset }: { run: Analysis; dataset: Da
         <div className="report-details-grid">
           <details className="panel report-details">
             <summary>
-              <Download size={17} /> Выгрузки и сведения о расчёте{' '}
-              <span>{run.files.length} файлов</span>
+              <Download size={17} /> Результаты анализа · CSV{' '}
+              <span>{downloadFiles.length} файла</span>
             </summary>
             <p className="micro">
               {run.engine_label}
@@ -393,7 +396,7 @@ export function AnalysisDashboard({ run, dataset }: { run: Analysis; dataset: Da
             </p>
             {summary.fallback_reason && <p className="micro">{summary.fallback_reason}</p>}
             <div className="export-links">
-              {run.files.map((file) => (
+              {downloadFiles.map((file) => (
                 <a
                   key={file.name}
                   href={`/api/v1/analyses/${run.id}/exports/${file.name}`}
