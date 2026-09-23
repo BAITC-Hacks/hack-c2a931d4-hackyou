@@ -14,8 +14,8 @@ from backend.app.database import Database
 from backend.app.errors import AppError
 from backend.app.main import create_app
 from backend.app.models import AnalysisRun
-from backend.app.services.results import ResultValidator
 from backend.app.services.engine import JSON_EXPORTS
+from backend.app.services.results import ResultValidator
 from backend.tests.test_cases import BIG_GID, create_case, parquet_files
 
 
@@ -248,10 +248,16 @@ def test_tampered_export_and_unknown_paths(client, settings):
 
 @pytest.mark.parametrize(
     "producer,manifest_version,graph_schema,accepted",
-    [("0.2.0", "0.2.0", "1.0", True), ("0.3.0", "0.3.0", "1.0", True),
-     ("0.2.0", "0.3.0", "1.0", False), ("0.3.0", "0.2.0", "1.0", False),
-     ("0.4.0", "0.4.0", "1.0", False), ("0.3.1", "0.3.1", "1.0", True),
-     ("0.3.1", "0.3.0", "1.0", False), ("0.3.1", "0.3.1", "2.0", False)],
+    [
+        ("0.2.0", "0.2.0", "1.0", True),
+        ("0.3.0", "0.3.0", "1.0", True),
+        ("0.2.0", "0.3.0", "1.0", False),
+        ("0.3.0", "0.2.0", "1.0", False),
+        ("0.4.0", "0.4.0", "1.0", False),
+        ("0.3.1", "0.3.1", "1.0", True),
+        ("0.3.1", "0.3.0", "1.0", False),
+        ("0.3.1", "0.3.1", "2.0", False),
+    ],
 )
 def test_snapshot_producer_versions_must_be_supported_and_consistent(
     client, tmp_path, producer, manifest_version, graph_schema, accepted
@@ -260,7 +266,9 @@ def test_snapshot_producer_versions_must_be_supported_and_consistent(
     output.mkdir()
     header = {"schema_version": "1.0", "analysis_id": "version-contract-fixture"}
     input_hashes = {name: "a" * 64 for name in ("nodes", "edges", "transactions")}
-    expected = [{"name": f"{name}.parquet", "sha256": value} for name, value in input_hashes.items()]
+    expected = [
+        {"name": f"{name}.parquet", "sha256": value} for name, value in input_hashes.items()
+    ]
     files = [{"name": f"{name}.csv", "sha256": "b" * 64} for name in results_rows()]
     hashes = {item["name"]: item["sha256"] for item in files}
     for name in JSON_EXPORTS:
@@ -270,15 +278,19 @@ def test_snapshot_producer_versions_must_be_supported_and_consistent(
         if name == "graph_bundle.json":
             bundle["schema_version"] = graph_schema
         if name == "analysis_bundle.json":
-            bundle.update(metadata={"engine_version": producer, "input_hashes": input_hashes},
-                          summary={"n_nodes": 5, "elapsed_seconds": 0, "limitations": []})
+            bundle.update(
+                metadata={"engine_version": producer, "input_hashes": input_hashes},
+                summary={"n_nodes": 5, "elapsed_seconds": 0, "limitations": []},
+            )
         if name == "model_info.json":
             bundle["backend"] = "isolation_forest"
         content = json.dumps(bundle).encode("utf-8")
         (output / name).write_bytes(content)
         hashes[name] = hashlib.sha256(content).hexdigest()
     (output / "manifest.json").write_text(
-        json.dumps({**header, "snapshot_version": 1, "engine_version": manifest_version, "files": hashes}),
+        json.dumps(
+            {**header, "snapshot_version": 1, "engine_version": manifest_version, "files": hashes}
+        ),
         encoding="utf-8",
     )
     summary = {"n_nodes": 5, "warnings": []}

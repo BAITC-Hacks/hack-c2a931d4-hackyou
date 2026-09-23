@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Layers3, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ChartNoAxesCombined, Check, Layers3, Loader2, ShieldCheck } from 'lucide-react';
 import { api } from '../../api';
 import { date } from '../../format';
 import { ErrorMessage } from '../../components/ErrorMessage';
@@ -18,6 +18,7 @@ export function CaseWorkspace() {
     retry: false,
   });
   const [selected, setSelected] = useState('');
+  const [view, setView] = useState<'analysis' | 'data'>('analysis');
   const item = query.data;
   const dataset = item?.datasets.find((value) => value.id === selected) ?? item?.latest_dataset;
   return (
@@ -43,17 +44,25 @@ export function CaseWorkspace() {
             </div>
             <Status item={item} />
           </div>
-          <div className="case-tabs">
-            <span className="active">
-              <Layers3 size={16} /> Данные кейса
-            </span>
+          <nav className="case-tabs" aria-label="Разделы кейса">
             {dataset && (
-              <a href="#analysis" className="analysis-jump">
-                Анализ и результаты ↓
-              </a>
+              <button
+                className={view === 'analysis' ? 'active' : ''}
+                aria-current={view === 'analysis' ? 'page' : undefined}
+                onClick={() => setView('analysis')}
+              >
+                <ChartNoAxesCombined size={16} /> Исследование
+              </button>
             )}
+            <button
+              className={view === 'data' || !dataset ? 'active' : ''}
+              aria-current={view === 'data' || !dataset ? 'page' : undefined}
+              onClick={() => setView('data')}
+            >
+              <Layers3 size={16} /> Исходные данные
+            </button>
             <span className="tab-note">Создан {date(item.created_at)}</span>
-          </div>
+          </nav>
           {item.datasets.length > 1 && (
             <label className="dataset-select">
               Сохранённый набор
@@ -67,7 +76,7 @@ export function CaseWorkspace() {
               </select>
             </label>
           )}
-          <div className="case-grid">
+          <div className="case-grid" hidden={Boolean(dataset) && view !== 'data'}>
             <ImportPanel key={caseId} caseId={caseId} hasDataset={Boolean(item.latest_dataset)} />
             {dataset ? (
               <QualityPanel dataset={dataset} />
@@ -98,7 +107,11 @@ export function CaseWorkspace() {
               </div>
             )}
           </div>
-          {dataset && <AnalysisPanel key={dataset.id} dataset={dataset} />}
+          {dataset && (
+            <div hidden={view !== 'analysis'}>
+              <AnalysisPanel key={dataset.id} dataset={dataset} />
+            </div>
+          )}
         </>
       )}
     </>

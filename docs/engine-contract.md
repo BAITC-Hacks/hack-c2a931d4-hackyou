@@ -10,6 +10,17 @@ Successful runs preserve all nine SDK artifacts, including transactions_bundle.j
 
 HTTP: POST /datasets/{id}/analyses with request_key UUID; POST /datasets/{id}/results with request_key plus nodes_roles, clusters, top_nodes multipart fields; GET /datasets/{id}/analyses with limit/offset; GET /analyses/{id}; GET /analyses/{id}/events; POST /analyses/{id}/cancel; GET /analyses/{id}/exports/{filename}. Prefix: /api/v1. Reusing a request_key within a dataset returns the same operation; use a new key for a deliberate rerun. Only one active operation per dataset is accepted.
 
+## Analyst read API
+
+All endpoints below read the selected immutable, successful run and check saved file hashes. They do not start the engine or recalculate AML metrics.
+
+- `GET /analyses/{id}/insights`: role counts and five equal priority intervals across **all** nodes, including isolates. Intervals are left-closed/right-open; the last includes 1. These are display bins, not risk classes.
+- `GET /analyses/{id}/nodes`: paginated roster (`limit` 1–100, `offset`), substring `search` on exact string GIDs, optional `role` and `bucket` 0–4, and `sort=priority_desc|priority_asc`. Filters intersect; priority ties use numeric GID order without JavaScript conversion. The count describes the filtered roster; overview charts keep the full-run scope.
+- `GET /analyses/{id}/nodes/{gid}`: CSV row plus a selected profile from `analysis_bundle.json`: flows, component scores, evidence and limitations. CSV imports return `profile: null`. Role scores and priority components are not percentages of a whole.
+- `GET /analyses/{id}/nodes/{gid}/neighborhood?limit=12`: one-hop directed transfers from `graph_bundle.json`, including reciprocal edges and self-loops. The neighbor cap is 1–20. Neighbors are chosen in descending order of their largest incident edge amount. All focal edges to selected neighbors are retained, with total neighbor/edge counts for disclosure. Disconnected nodes remain present. This is a presentation subset, not a new graph score or a traced-money claim.
+
+GIDs and cluster IDs remain strings. Profile and edge amounts are decimal strings. CSV imports support overview/search but have no graph snapshot (404 for neighborhood). Unknown nodes return 404; unfinished/failed runs and changed files return 409. Snapshot reads currently parse local files per request; full JSON is never sent to the browser. Indexing or caching can be added if larger datasets require it.
+
 ## Analysis
 
 AnalysisRequest: case_id, dataset_id, analysis_id, absolute input directory, absolute output directory, parameters, schema_version.

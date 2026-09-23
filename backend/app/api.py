@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
@@ -6,6 +6,13 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from backend.app.analysis_schemas import AnalysisCreate, AnalysisPage, AnalysisRead, EventRead
+from backend.app.insight_schemas import (
+    AnalysisInsights,
+    Neighborhood,
+    NodeDetail,
+    NodePage,
+    NodeRole,
+)
 from backend.app.repositories import CaseRepository
 from backend.app.schemas import (
     CaseCreate,
@@ -17,6 +24,7 @@ from backend.app.schemas import (
 )
 from backend.app.services.cases import CaseService
 from backend.app.services.datasets import DatasetService
+from backend.app.services.insights import InsightService
 
 router = APIRouter(prefix="/api/v1")
 
@@ -130,3 +138,39 @@ def download_export(analysis_id: UUID, filename: str, request: Request):
     path = request.app.state.analyses.download(str(analysis_id), filename)
     media_type = "application/json" if filename.endswith(".json") else "text/csv; charset=utf-8"
     return FileResponse(path, filename=filename, media_type=media_type)
+
+
+@router.get("/analyses/{analysis_id}/insights", response_model=AnalysisInsights)
+def get_insights(analysis_id: UUID, request: Request):
+    return InsightService(request.app.state.analyses).overview(str(analysis_id))
+
+
+@router.get("/analyses/{analysis_id}/nodes", response_model=NodePage)
+def list_analysis_nodes(
+    analysis_id: UUID,
+    request: Request,
+    search: Annotated[str, Query(max_length=64)] = "",
+    role: NodeRole | None = None,
+    bucket: Annotated[int | None, Query(ge=0, le=4)] = None,
+    sort: Literal["priority_desc", "priority_asc"] = "priority_desc",
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    return InsightService(request.app.state.analyses).nodes(
+        str(analysis_id), search.strip(), role, bucket, sort, limit, offset
+    )
+
+
+@router.get("/analyses/{analysis_id}/nodes/{gid}", response_model=NodeDetail)
+def get_analysis_node(analysis_id: UUID, gid: str, request: Request):
+    return InsightService(request.app.state.analyses).node(str(analysis_id), gid)
+
+
+@router.get("/analyses/{analysis_id}/nodes/{gid}/neighborhood", response_model=Neighborhood)
+def get_node_neighborhood(
+    analysis_id: UUID,
+    gid: str,
+    request: Request,
+    limit: Annotated[int, Query(ge=1, le=20)] = 12,
+):
+    return InsightService(request.app.state.analyses).neighborhood(str(analysis_id), gid, limit)

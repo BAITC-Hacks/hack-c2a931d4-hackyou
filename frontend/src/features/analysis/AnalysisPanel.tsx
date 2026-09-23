@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Download, FileUp, Loader2, Play, X } from 'lucide-react';
+import { FileUp, Loader2, Play, X } from 'lucide-react';
 import { api, ApiError, type Analysis, type AnalysisStatus, type Dataset } from '../../api';
 import { ErrorMessage } from '../../components/ErrorMessage';
-import { date, count } from '../../format';
+import { date } from '../../format';
 import { fileSize } from '../../files';
+import { AnalysisDashboard } from './AnalysisDashboard';
 
 const statusText: Record<AnalysisStatus, string> = {
   queued: 'В очереди',
@@ -14,14 +15,6 @@ const statusText: Record<AnalysisStatus, string> = {
   failed: 'Ошибка',
   cancelled: 'Отменён',
   interrupted: 'Прерван',
-};
-const roles: Record<string, string> = {
-  consolidator: 'Консолидатор',
-  transit: 'Транзит',
-  distributor: 'Распределитель',
-  terminal: 'Терминальный',
-  coordinator: 'Координатор',
-  peripheral: 'Периферия',
 };
 const active = (run?: Analysis) =>
   Boolean(run && ['queued', 'running', 'validating'].includes(run.status));
@@ -107,10 +100,10 @@ export function AnalysisPanel({ dataset }: { dataset: Dataset }) {
   };
   return (
     <section id="analysis" className="analysis-section" aria-label="Анализ сети">
-      <div className="analysis-heading">
+      <div className={`analysis-heading ${summary ? 'has-results' : ''}`}>
         <div>
           <div className="eyebrow">АНАЛИЗ СЕТИ</div>
-          <h2>От переводов к ролевым гипотезам</h2>
+          <h2>Исследование финансовой сети</h2>
           <p className="muted">Роли, сообщества и приоритеты для выбранного набора.</p>
         </div>
         <button
@@ -128,120 +121,128 @@ export function AnalysisPanel({ dataset }: { dataset: Dataset }) {
         </p>
       )}
       <ErrorMessage error={mutation.error || cancel.error || history.error || detail.error} />
-      <div className="analysis-layout">
-        <aside className="panel analysis-history">
-          <h3>
-            История запусков <small>{history.data?.total ?? 0}</small>
-          </h3>
-          {history.isPending && <p className="micro">Загружаем историю…</p>}
-          {history.data?.total === 0 && (
-            <p className="micro">
-              Запусков ещё нет. Каждый результат сохраняется отдельно и остаётся доступен после
-              перезапуска.
-            </p>
-          )}
-          {history.data?.items.map((item) => (
-            <button
-              key={item.id}
-              className={`run-card ${item.id === id ? 'selected' : ''}`}
-              onClick={() => setSelected(item.id)}
-            >
-              <span>
-                <strong>{item.source === 'command' ? 'Анализ движком' : 'Импорт CSV'}</strong>
-                <small>{item.id.slice(0, 8)}</small>
-              </span>
-              <span>
-                <small>{date(item.created_at)}</small>
-                <b className={`run-status ${item.status}`}>{statusText[item.status]}</b>
-              </span>
-            </button>
-          ))}
-          {(history.data?.total ?? 0) > 10 && (
-            <div className="analysis-actions">
+      <div className={`analysis-layout ${summary ? 'has-results' : ''}`}>
+        <details className="panel analysis-history">
+          <summary>
+            История запусков и импорт CSV <span>{history.data?.total ?? 0} запусков</span>
+          </summary>
+          <div className="history-content">
+            <h3>
+              История запусков <small>{history.data?.total ?? 0}</small>
+            </h3>
+            {history.isPending && <p className="micro">Загружаем историю…</p>}
+            {history.data?.total === 0 && (
+              <p className="micro">
+                Запусков ещё нет. Каждый результат сохраняется отдельно и остаётся доступен после
+                перезапуска.
+              </p>
+            )}
+            {history.data?.items.map((item) => (
               <button
-                className="button secondary"
-                disabled={offset === 0}
-                onClick={() => {
-                  setOffset(offset - 10);
-                  setSelected('');
-                }}
+                key={item.id}
+                className={`run-card ${item.id === id ? 'selected' : ''}`}
+                onClick={() => setSelected(item.id)}
               >
-                Назад
-              </button>
-              <button
-                className="button secondary"
-                disabled={offset + 10 >= (history.data?.total ?? 0)}
-                onClick={() => {
-                  setOffset(offset + 10);
-                  setSelected('');
-                }}
-              >
-                Далее
-              </button>
-            </div>
-          )}
-          <details className="result-import">
-            <summary>Загрузить готовые CSV</summary>
-            <p className="micro">
-              Три выгрузки для этого набора: роли узлов, кластеры и рейтинг. Проверим их по исходным
-              parquet.
-            </p>
-            <input
-              ref={input}
-              type="file"
-              accept=".csv"
-              multiple
-              className="sr-only"
-              aria-label="Выбрать CSV результатов"
-              onChange={(event) => {
-                selectFiles(Array.from(event.target.files ?? []));
-                event.target.value = '';
-              }}
-            />
-            <button
-              className="button secondary"
-              disabled={busy}
-              onClick={() => input.current?.click()}
-            >
-              <FileUp size={16} />
-              Выбрать CSV
-            </button>
-            {resultNames.map((key) => (
-              <div className="result-file" key={key}>
                 <span>
-                  {key}.csv<small>{files[key] ? fileSize(files[key].size) : 'Ожидается'}</small>
+                  <strong>{item.source === 'command' ? 'Анализ движком' : 'Импорт CSV'}</strong>
+                  <small>{item.id.slice(0, 8)}</small>
                 </span>
-                {files[key] && (
-                  <button
-                    className="icon-button"
-                    disabled={busy}
-                    aria-label={`Убрать ${key}.csv`}
-                    onClick={() => {
-                      const next = { ...files };
-                      delete next[key];
-                      setFiles(next);
-                      operationKey.current = null;
-                    }}
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
+                <span>
+                  <small>{date(item.created_at)}</small>
+                  <b className={`run-status ${item.status}`}>{statusText[item.status]}</b>
+                </span>
+              </button>
             ))}
-            <ErrorMessage error={fileError} />
-            <button
-              className="button secondary"
-              disabled={busy || !resultNames.every((key) => files[key])}
-              onClick={() => mutation.mutate('files')}
-            >
-              Проверить результаты
-            </button>
-          </details>
-        </aside>
+            {(history.data?.total ?? 0) > 10 && (
+              <div className="analysis-actions">
+                <button
+                  className="button secondary"
+                  disabled={offset === 0}
+                  onClick={() => {
+                    setOffset(offset - 10);
+                    setSelected('');
+                  }}
+                >
+                  Назад
+                </button>
+                <button
+                  className="button secondary"
+                  disabled={offset + 10 >= (history.data?.total ?? 0)}
+                  onClick={() => {
+                    setOffset(offset + 10);
+                    setSelected('');
+                  }}
+                >
+                  Далее
+                </button>
+              </div>
+            )}
+            <details className="result-import">
+              <summary>Загрузить готовые CSV</summary>
+              <p className="micro">
+                Три выгрузки для этого набора: роли узлов, кластеры и рейтинг. Проверим их по
+                исходным parquet.
+              </p>
+              <input
+                ref={input}
+                type="file"
+                accept=".csv"
+                multiple
+                className="sr-only"
+                aria-label="Выбрать CSV результатов"
+                onChange={(event) => {
+                  selectFiles(Array.from(event.target.files ?? []));
+                  event.target.value = '';
+                }}
+              />
+              <button
+                className="button secondary"
+                disabled={busy}
+                onClick={() => input.current?.click()}
+              >
+                <FileUp size={16} />
+                Выбрать CSV
+              </button>
+              {resultNames.map((key) => (
+                <div className="result-file" key={key}>
+                  <span>
+                    {key}.csv<small>{files[key] ? fileSize(files[key].size) : 'Ожидается'}</small>
+                  </span>
+                  {files[key] && (
+                    <button
+                      className="icon-button"
+                      disabled={busy}
+                      aria-label={`Убрать ${key}.csv`}
+                      onClick={() => {
+                        const next = { ...files };
+                        delete next[key];
+                        setFiles(next);
+                        operationKey.current = null;
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <ErrorMessage error={fileError} />
+              <button
+                className="button secondary"
+                disabled={busy || !resultNames.every((key) => files[key])}
+                onClick={() => mutation.mutate('files')}
+              >
+                Проверить результаты
+              </button>
+            </details>
+          </div>
+        </details>
         <div className="analysis-result">
           {run ? (
             <>
-              <div className="panel run-progress" aria-live="polite">
+              <div
+                className={`panel run-progress ${summary ? 'completed' : ''}`}
+                aria-live="polite"
+              >
                 <div className="analysis-actions">
                   <strong>{statusText[run.status]}</strong>
                   <span className="micro">
@@ -277,106 +278,7 @@ export function AnalysisPanel({ dataset }: { dataset: Dataset }) {
                   </p>
                 )}
               </div>
-              {summary && (
-                <>
-                  <div className="panel">
-                    <div className="panel-heading">
-                      <span className="square-icon green">
-                        <CheckCircle2 size={20} />
-                      </span>
-                      <div>
-                        <h2>Результат сохранён</h2>
-                        <p>
-                          {count(summary.n_nodes)} клиентов · {count(summary.n_clusters)} сообществ
-                          {summary.elapsed_seconds != null
-                            ? ` · ${summary.elapsed_seconds.toFixed(1)} с расчёта`
-                            : ''}
-                        </p>
-                      </div>
-                    </div>
-                    {summary.model_backend && (
-                      <div className="model-note">
-                        Модель: <strong>{summary.model_backend}</strong>
-                        {summary.fallback_reason && (
-                          <p>Причина резервного режима: {summary.fallback_reason}</p>
-                        )}
-                      </div>
-                    )}
-                    <div className="role-counts">
-                      {Object.entries(summary.role_counts).map(([role, total]) => (
-                        <span key={role}>
-                          {roles[role] ?? role}
-                          <b>{count(total)}</b>
-                        </span>
-                      ))}
-                    </div>
-                    <div className="export-links">
-                      {run.files.map((file) => (
-                        <a
-                          key={file.name}
-                          href={`/api/v1/analyses/${run.id}/exports/${file.name}`}
-                          download
-                        >
-                          <Download size={15} />
-                          <span>
-                            {file.name}
-                            <small>{fileSize(file.size_bytes)}</small>
-                          </span>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="panel ranking-panel">
-                    <div className="panel-heading">
-                      <div>
-                        <h2>Top-{summary.top_nodes.length} по приоритету</h2>
-                        <p>
-                          Оценка приоритета определяет порядок проверки и не является вероятностью
-                          нарушения.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="table-scroll">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>№</th>
-                            <th>Клиент / GID</th>
-                            <th>Ролевая гипотеза</th>
-                            <th>Приоритет</th>
-                            <th>Обоснование</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {summary.top_nodes.map((node) => (
-                            <tr key={node.gid}>
-                              <td>{node.rank}</td>
-                              <td>
-                                <code>{node.gid}</code>
-                              </td>
-                              <td>{roles[node.role] ?? node.role}</td>
-                              <td>
-                                <span className="score-value">
-                                  {node.priority_score.toFixed(3)}
-                                </span>
-                              </td>
-                              <td>{node.why}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  <div className="panel">
-                    <h3>Ограничения интерпретации</h3>
-                    <ul className="analysis-warnings">
-                      {summary.warnings.map((warning, index) => (
-                        <li key={index}>{warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </>
-              )}
+              {summary && <AnalysisDashboard key={run.id} run={run} dataset={dataset} />}
             </>
           ) : (
             <div className="analysis-empty">

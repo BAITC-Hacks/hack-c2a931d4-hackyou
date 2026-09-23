@@ -55,6 +55,20 @@ def test_real_engine_analysis_snapshot_downloads_and_reopen(tmp_path):
         manifest = client.get(f"/api/v1/analyses/{analysis_id}/exports/manifest.json").json()
         analysis = client.get(f"/api/v1/analyses/{analysis_id}/exports/analysis_bundle.json").json()
         assert manifest["engine_version"] == analysis["metadata"]["engine_version"] == "0.3.1"
+        root = f"/api/v1/analyses/{analysis_id}"
+        insights = client.get(root + "/insights").json()
+        assert (
+            sum(item["count"] for item in insights["priority_buckets"])
+            == dataset["quality"]["n_nodes"]
+        )
+        gid = run["summary"]["top_nodes"][0]["gid"]
+        detail = client.get(root + f"/nodes/{gid}")
+        assert detail.status_code == 200, detail.text
+        assert detail.json()["profile"]["role_scores"]
+        graph = client.get(root + f"/nodes/{gid}/neighborhood")
+        assert graph.status_code == 200, graph.text
+        assert graph.json()["focus"] == gid
+        assert all(gid in (edge["src"], edge["dst"]) for edge in graph.json()["edges"])
         events = client.get(f"/api/v1/analyses/{analysis_id}/events").json()
         assert any(
             event["message"] == "Проверяем восстановление сохранённого анализа." for event in events

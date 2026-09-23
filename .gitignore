@@ -8,6 +8,7 @@ htmlcov/
 node_modules/
 .npm-cache/
 dist/
+.vite/
 *.tsbuildinfo
 .env
 .env.*

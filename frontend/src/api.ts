@@ -83,6 +83,53 @@ export interface AnalysisEvent {
   created_at: string;
 }
 
+export interface AnalysisInsights {
+  n_nodes: number;
+  role_counts: Record<string, number>;
+  priority_buckets: { index: number; lower: number; upper: number; count: number }[];
+}
+export interface AnalysisNode {
+  gid: string;
+  role: string;
+  role_score: number;
+  priority_score: number;
+  cluster_id: string;
+  evidence: string;
+}
+export interface NodePage {
+  items: AnalysisNode[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+export interface NodeDetail {
+  node: AnalysisNode;
+  profile: {
+    is_seed: boolean;
+    depth: number;
+    in_kzt: string;
+    out_kzt: string;
+    in_tx: number;
+    out_tx: number;
+    in_degree: number;
+    out_degree: number;
+    role_scores: Record<string, number>;
+    priority_components: Record<string, number>;
+    role_ambiguity: boolean;
+    secondary_role: string | null;
+    observability_score: number;
+    truncated_by_depth: boolean;
+    evidence: { kind: string; text: string; source: string }[];
+  } | null;
+}
+export interface Neighborhood {
+  focus: string;
+  nodes: AnalysisNode[];
+  edges: { src: string; dst: string; sum_kzt: string; n_tx: number }[];
+  total_neighbors: number;
+  total_edges: number;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -119,6 +166,13 @@ export const api = {
       `/datasets/${datasetId}/analyses?limit=10&offset=${offset}`,
     ),
   getAnalysis: (id: string) => request<Analysis>(`/analyses/${id}`),
+  analysisInsights: (id: string) => request<AnalysisInsights>(`/analyses/${id}/insights`),
+  analysisNodes: (id: string, params: URLSearchParams) =>
+    request<NodePage>(`/analyses/${id}/nodes?${params}`),
+  analysisNode: (id: string, gid: string) =>
+    request<NodeDetail>(`/analyses/${id}/nodes/${encodeURIComponent(gid)}`),
+  nodeNeighborhood: (id: string, gid: string) =>
+    request<Neighborhood>(`/analyses/${id}/nodes/${encodeURIComponent(gid)}/neighborhood`),
   analysisEvents: (id: string) => request<AnalysisEvent[]>(`/analyses/${id}/events`),
   startAnalysis: (datasetId: string, requestKey: string) =>
     request<Analysis>(`/datasets/${datasetId}/analyses`, {
