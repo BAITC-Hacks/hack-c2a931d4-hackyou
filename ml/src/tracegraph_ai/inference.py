@@ -143,6 +143,9 @@ def _evidence(gid, node, ranks, boundary, anomaly, counterfactual):
             "source": source, "text": text, **extra,
         })
 
+    add("observation_scope", "observability", {"date_resolution": "day", "account_balances_available": False},
+        "Видны только предоставленные переводы: остатки, внешние потоки и события вне периода неизвестны.",
+        category="limitation")
     incoming = _number(node.get("in_kzt"))
     outgoing = _number(node.get("out_kzt"))
     in_tx = int(_number(node.get("in_tx")))
@@ -358,6 +361,14 @@ def infer_roles(features: dict[int, dict], config: dict,
         }
         priority = compute_priority(components, priority_weights, confidence, observable)
         evidence = _evidence(gid, node, p, boundary, model, cf)
+        if ambiguous:
+            evidence.append({
+                "evidence_id": f"E-{gid}-role_ambiguity", "gid": gid, "type": "role_ambiguity",
+                "dimension": "observability", "kind": "limitation",
+                "value": {"primary_strength": strength, "secondary_strength": scores[secondary]},
+                "source": "deterministic_role_engine",
+                "text": f"Неоднозначная роль: {role} ({strength:.3f}) и альтернативная {secondary} ({scores[secondary]:.3f}); confidence снижен.",
+            })
         role_text = "кандидат в узлы координации" if role == "coordinator" else role
         evidence.append({
             "evidence_id": f"E-{gid}-role_hypothesis", "gid": gid, "type": "role_hypothesis",

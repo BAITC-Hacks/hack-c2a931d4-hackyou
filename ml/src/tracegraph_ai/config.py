@@ -31,6 +31,8 @@ class AnalysisConfig:
 
     def to_dict(self) -> dict:
         config = asdict(self)
+        if isinstance(self.random_seed, bool) or not isinstance(self.random_seed, int) or not 0 <= self.random_seed < 2**32:
+            raise ValueError("random_seed must be an integer between 0 and 2**32 - 1")
         if self.model not in {"auto", "autoencoder", "isolation_forest"}:
             raise ValueError("model must be auto, autoencoder or isolation_forest")
         for name in ("max_depth", "temporal_window_days", "betweenness_samples", "ae_max_epochs",

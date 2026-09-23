@@ -9,7 +9,7 @@ from pathlib import Path
 
 SCHEMA_VERSION = "1.0"
 ENGINE_VERSION = "0.1.0"
-ID_FIELDS = {"gid", "src", "dst", "target_gid", "source_gid", "target", "source"}
+ID_FIELDS = {"gid", "src", "dst", "target_gid", "source_gid"}
 ID_LIST_FIELDS = {"reachable_seed_ids", "top_gids", "target_gids", "related_gids", "seed_ids"}
 
 
@@ -27,7 +27,7 @@ def parse_gid(value) -> int:
 def json_safe(value, key: str = ""):
     if value is None:
         return None
-    if key in ID_FIELDS and isinstance(value, (Integral, str)) and not isinstance(value, bool):
+    if key in ID_FIELDS:
         return str(parse_gid(value))
     if isinstance(value, dict):
         return {str(k): json_safe(v, str(k)) for k, v in value.items()}
