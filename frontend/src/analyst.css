@@ -1156,6 +1156,32 @@
   font-size: 12px;
   color: #8a967f;
 }
+.graph-color-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 22px;
+  border-bottom: 1px solid #eaf0e0;
+  color: #52635b;
+  font-size: 12px;
+}
+.graph-color-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.graph-color-legend i {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.graph-color-legend .focus-outline,
+.graph-footer .focus-outline {
+  background: #fff;
+  border: 2px solid #253c42;
+}
 .graph-canvas {
   overflow: auto;
   background-color: #fff;

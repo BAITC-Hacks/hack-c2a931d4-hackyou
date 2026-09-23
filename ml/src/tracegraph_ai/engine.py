@@ -6,6 +6,7 @@ from pathlib import Path
 import time
 
 from .config import AnalysisConfig
+from .communities import CLUSTER_HYPOTHESIS_VERSION, describe_communities
 from .errors import AnalysisNotReadyError, InputValidationError, InvestigationStateError, UnknownNodeError
 from .serialization import ENGINE_VERSION, SCHEMA_VERSION, canonical_hash, json_safe, parse_gid, write_json
 
@@ -67,15 +68,13 @@ class TraceGraph:
             node.update(anomalies[gid])
             node["counterfactual"] = removals.get(gid, {"status": "not_computed", "disruption_score": None})
         ordered = rank_nodes(nodes)
-        for cluster in clusters:
-            members = [n for n in ordered if n["cluster_id"] == cluster["cluster_id"]]
-            cluster["top_gids"] = [n["gid"] for n in members[:5]]
-            cluster["hypothesis"] = f"Наблюдаемое сообщество из {len(members)} узлов; ведущая гипотеза приоритетного узла: {members[0]['role']}."
+        describe_communities(clusters, ordered, graph)
         dependencies = {name: version(name) for name in ["numpy", "pandas", "pyarrow", "networkx", "scipy", "scikit-learn"]}
         model_backend = model_info.get("backend", model_info.get("actual_backend"))
         if model_backend == "autoencoder":
             dependencies["torch"] = version("torch")
         analysis_id = canonical_hash({"inputs": tables["input_hashes"], "config": self.config,
+                                      "cluster_hypothesis_version": CLUSTER_HYPOTHESIS_VERSION,
                                       "engine_version": ENGINE_VERSION, "schema_version": SCHEMA_VERSION,
                                       "backend": model_backend, "dependencies": dependencies})
         header = {"schema_version": SCHEMA_VERSION, "analysis_id": analysis_id}
@@ -88,6 +87,7 @@ class TraceGraph:
                             "Даты имеют дневную точность; роли являются гипотезами, а не доказательством виновности."],
         }
         metadata = {"engine_version": ENGINE_VERSION, "input_hashes": tables["input_hashes"],
+                    "cluster_hypothesis_version": CLUSTER_HYPOTHESIS_VERSION,
                     "config": deepcopy(self.config), "dependencies": dependencies,
                     "timings_seconds": timings}
         analysis = dict(header, summary=summary, metadata=metadata,

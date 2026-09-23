@@ -10,7 +10,13 @@ import { roles } from './presentation';
 import { flowLayout, type FlowDirection } from './flowLayout';
 
 type Edge = Neighborhood['edges'][number];
+type GraphNode = Neighborhood['nodes'][number];
 const edgeKey = (edge: Edge) => `${edge.src}:${edge.dst}`;
+const clusterColor = (clusterId: string) => {
+  let hash = 0;
+  for (const character of clusterId) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return `hsl(${(hash * 137.508) % 360} 56% 42%)`;
+};
 
 export function GraphExplorer({
   analysisId,
@@ -24,6 +30,7 @@ export function GraphExplorer({
   const [trail, setTrail] = useState<string[]>([]);
   const [zoom, setZoom] = useState(1);
   const [direction, setDirection] = useState<FlowDirection>('all');
+  const [colorMode, setColorMode] = useState<'role' | 'cluster'>('role');
   const [limit, setLimit] = useState(12);
   const [selection, setSelection] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -67,6 +74,15 @@ export function GraphExplorer({
     }
   };
   const focus = graph?.nodes.find((node) => node.gid === gid);
+  const nodeColor = (node: GraphNode) =>
+    colorMode === 'cluster' ? clusterColor(node.cluster_id) : (roles[node.role]?.color ?? '#7c8792');
+  const visibleIds = new Set([gid, ...(layout?.flows.map((flow) => flow.peer) ?? [])]);
+  const legend = Array.from(new Map((graph?.nodes ?? [])
+    .filter((node) => visibleIds.has(node.gid))
+    .map((node) => [colorMode === 'role' ? node.role : node.cluster_id, {
+      label: colorMode === 'role' ? (roles[node.role]?.label ?? node.role) : `Сообщество ${node.cluster_id}`,
+      color: nodeColor(node),
+    }])).entries());
   return (
     <section
       ref={panel}
@@ -175,6 +191,17 @@ export function GraphExplorer({
           ))}
         </div>
         <label>
+          Цвет узлов{' '}
+          <select
+            aria-label="Окраска узлов"
+            value={colorMode}
+            onChange={(event) => setColorMode(event.target.value === 'cluster' ? 'cluster' : 'role')}
+          >
+            <option value="role">По ролям</option>
+            <option value="cluster">По сообществам</option>
+          </select>
+        </label>
+        <label>
           Соседей на схеме{' '}
           <select
             aria-label="Лимит соседей"
@@ -198,6 +225,13 @@ export function GraphExplorer({
       )}
       {graph && layout && (
         <>
+          <div className="graph-color-legend" aria-label="Легенда окраски узлов">
+            <strong>{colorMode === 'role' ? 'Роли узлов' : 'Сообщества графа'}</strong>
+            {legend.map(([key, item]) => (
+              <span key={key}><i style={{ background: item.color }} />{item.label}</span>
+            ))}
+            <span><i className="focus-outline" />Обводка — участник в фокусе</span>
+          </div>
           <div className="graph-scope">
             <span>
               Выбрано {count(graph.nodes.length - 1)} из {count(graph.total_neighbors)} соседей · на
@@ -317,8 +351,9 @@ export function GraphExplorer({
                       <circle
                         className="node-circle"
                         r="36"
-                        fill="#fff"
-                        stroke={flow.direction === 'incoming' ? '#a7c6d0' : '#bacda4'}
+                        fill={nodeColor(node)}
+                        fillOpacity="0.18"
+                        stroke={nodeColor(node)}
                         strokeWidth="2"
                       />
                       <text className="graph-node-short" y="5">
@@ -329,6 +364,7 @@ export function GraphExplorer({
                       </text>
                       <text className="graph-role" y="77">
                         {roles[node.role]?.label ?? node.role}
+                        {` · С${node.cluster_id}`}
                         {mutual ? ' · ↔' : ''}
                       </text>
                       <title>
@@ -350,12 +386,13 @@ export function GraphExplorer({
                 onClick={() => setProfileOpen(true)}
                 onKeyDown={(event) => activate(event, () => setProfileOpen(true))}
               >
-                <circle r="61" fill="#e8f1d7" />
+                <circle r="61" fill="#fff" stroke="#253c42" strokeWidth="3" />
                 <circle
                   className="node-circle"
                   r="49"
-                  fill="#8dce46"
-                  stroke="#72b535"
+                  fill={focus ? nodeColor(focus) : '#7c8792'}
+                  fillOpacity="0.25"
+                  stroke={focus ? nodeColor(focus) : '#7c8792'}
                   strokeWidth="2"
                 />
                 <text className="graph-focus-label" y="-77">
@@ -369,6 +406,7 @@ export function GraphExplorer({
                 </text>
                 <text className="graph-role" y="108">
                   {focus && roles[focus.role]?.label}
+                  {focus && ` · С${focus.cluster_id}`}
                 </text>
               </g>
             </svg>
@@ -391,7 +429,7 @@ export function GraphExplorer({
           )}
           <div className="graph-footer">
             <span>
-              <i /> Выбранный участник
+              <i className="focus-outline" /> Выбранный участник — внешняя обводка
             </span>
             <span>↔ Один и тот же GID в двух колонках — переводы в обе стороны</span>
             <span>Узел → исследовать его связи · центр → профиль</span>
