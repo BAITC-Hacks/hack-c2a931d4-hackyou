@@ -247,10 +247,13 @@ def infer_roles(features: dict[int, dict], config: dict,
     threshold = _unit(config.get("role_threshold", 0.45))
     ambiguity_margin = _unit(config.get("ambiguity_margin", 0.08))
     priority_weights = config.get("priority_weights", DEFAULT_PRIORITY_WEIGHTS)
+    # Plain legacy dictionaries predate AnalysisConfig's v2 default.
+    methodology_version = config.get("role_methodology_version", 1)
     result = {}
     for raw_gid, original in features.items():
         gid = int(raw_gid)
         node = dict(original)
+        node.pop("confidence_breakdown", None)
         node["gid"] = gid
         p = ranks[raw_gid]
         incoming = max(0.0, _number(node.get("in_kzt")))
@@ -311,6 +314,10 @@ def infer_roles(features: dict[int, dict], config: dict,
                 and incoming > 0 and outgoing > 0
                 and (p["betweenness"] > 0 or bridge > 0),
         }
+        if methodology_version == 2:
+            # Topology/throughput alone cannot identify a pass-through role when
+            # neither balance nor temporal passage is observable (notably seeds).
+            eligible["transit"] = eligible["transit"] and (balance is not None or rapid is not None)
         scores = {role: _weighted(signals, role_weights) if eligible[role] else 0.0
                   for role, role_weights in weights.items()}
         # A coordination candidate needs a stronger multi-signal score than a generic role.
@@ -344,19 +351,50 @@ def infer_roles(features: dict[int, dict], config: dict,
             "peripheral": {"flow": strength if not isolated else 0.0},
         }[role]
         supporting = [name for name, value in support.items() if value is not None and value >= 0.45]
-        coverage = min(len(supporting) / 4.0, 1.0)
+        coverage_divisor = 3.0 if methodology_version == 2 and role in {"transit", "distributor"} else 4.0
+        coverage = min(len(supporting) / coverage_divisor, 1.0)
         agreement = _mean(support.values())
         sample = min(log1p(in_tx + out_tx) / log1p(20), 1.0)
-        confidence = _unit((0.18 + 0.27 * strength + 0.25 * coverage + 0.15 * agreement + 0.15 * sample)
-                           * (0.35 + 0.65 * observable))
-        if ambiguous:
-            confidence *= 0.78
-        if is_seed:
-            confidence *= 0.90
-        if boundary:
-            confidence = min(confidence, 0.45)
-        if isolated:
-            confidence = min(confidence, 0.35)
+        if methodology_version == 2:
+            role_observable = observable
+            if role == "distributor":
+                # Observed distribution uses outgoing evidence; unknown seed
+                # inflow must not penalize it twice. Boundary uncertainty remains.
+                role_observable = min(
+                    0.8 - (0.35 if boundary else 0.0),
+                    observable + (0.25 if is_seed else 0.0) + (0.10 if in_degree == 0 else 0.0),
+                )
+            observability_multiplier = 0.35 + 0.65 * role_observable
+            ambiguity_multiplier = 0.78 if ambiguous else 1.0
+            seed_multiplier = 0.90 if is_seed and role != "distributor" else 1.0
+            raw_base = 0.18 + 0.27 * strength + 0.25 * coverage + 0.15 * agreement + 0.15 * sample
+            confidence = _unit(raw_base * observability_multiplier)
+            confidence *= ambiguity_multiplier
+            confidence *= seed_multiplier
+            cap = 0.35 if isolated else 0.45 if boundary else 1.0
+            confidence = min(confidence, cap)
+            node["confidence_breakdown"] = {
+                "methodology_version": 2,
+                "supporting_dimension_count": len(supporting),
+                "coverage_divisor": int(coverage_divisor), "coverage": coverage,
+                "agreement": agreement, "sample": sample, "raw_base": raw_base,
+                "global_observability": observable, "role_observability": role_observable,
+                "multipliers": {"ambiguity": ambiguity_multiplier, "seed": seed_multiplier,
+                                "observability": observability_multiplier},
+                "cap": cap, "final": confidence,
+            }
+        else:
+            # Keep the original operation order and payload for saved v1 replay.
+            confidence = _unit((0.18 + 0.27 * strength + 0.25 * coverage + 0.15 * agreement + 0.15 * sample)
+                               * (0.35 + 0.65 * observable))
+            if ambiguous:
+                confidence *= 0.78
+            if is_seed:
+                confidence *= 0.90
+            if boundary:
+                confidence = min(confidence, 0.45)
+            if isolated:
+                confidence = min(confidence, 0.35)
         label = "high" if confidence >= 0.75 else "medium" if confidence >= 0.45 else "low"
         components = {
             "seed_convergence": seed_signal, "structural_importance": structural,

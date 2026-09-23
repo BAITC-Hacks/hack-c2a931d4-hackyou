@@ -247,12 +247,14 @@ def test_tampered_export_and_unknown_paths(client, settings):
 
 
 @pytest.mark.parametrize(
-    "producer,manifest_version,accepted",
-    [("0.2.0", "0.2.0", True), ("0.3.0", "0.3.0", True),
-     ("0.2.0", "0.3.0", False), ("0.3.0", "0.2.0", False), ("0.4.0", "0.4.0", False)],
+    "producer,manifest_version,graph_schema,accepted",
+    [("0.2.0", "0.2.0", "1.0", True), ("0.3.0", "0.3.0", "1.0", True),
+     ("0.2.0", "0.3.0", "1.0", False), ("0.3.0", "0.2.0", "1.0", False),
+     ("0.4.0", "0.4.0", "1.0", False), ("0.3.1", "0.3.1", "1.0", True),
+     ("0.3.1", "0.3.0", "1.0", False), ("0.3.1", "0.3.1", "2.0", False)],
 )
 def test_snapshot_producer_versions_must_be_supported_and_consistent(
-    client, tmp_path, producer, manifest_version, accepted
+    client, tmp_path, producer, manifest_version, graph_schema, accepted
 ):
     output = tmp_path / "versioned-output"
     output.mkdir()
@@ -265,6 +267,8 @@ def test_snapshot_producer_versions_must_be_supported_and_consistent(
         if name == "manifest.json":
             continue
         bundle = dict(header)
+        if name == "graph_bundle.json":
+            bundle["schema_version"] = graph_schema
         if name == "analysis_bundle.json":
             bundle.update(metadata={"engine_version": producer, "input_hashes": input_hashes},
                           summary={"n_nodes": 5, "elapsed_seconds": 0, "limitations": []})

@@ -19,6 +19,7 @@ class AnalysisConfig:
     counterfactual_top_n: int = 25
     role_threshold: float = 0.45
     ambiguity_margin: float = 0.08
+    role_methodology_version: int = 2
     priority_weights: dict[str, float] = field(default_factory=lambda: {
         "seed_convergence": 0.30,
         "structural_importance": 0.20,
@@ -35,6 +36,10 @@ class AnalysisConfig:
             raise ValueError("random_seed must be an integer between 0 and 2**32 - 1")
         if self.model not in {"auto", "autoencoder", "isolation_forest"}:
             raise ValueError("model must be auto, autoencoder or isolation_forest")
+        if (isinstance(self.role_methodology_version, bool)
+                or not isinstance(self.role_methodology_version, int)
+                or self.role_methodology_version not in {1, 2}):
+            raise ValueError("role_methodology_version must be integer 1 or 2")
         for name in ("max_depth", "temporal_window_days", "betweenness_samples", "ae_max_epochs",
                      "ae_patience", "ae_batch_size", "counterfactual_top_n"):
             if not isinstance(config[name], int) or isinstance(config[name], bool) or config[name] < 1:

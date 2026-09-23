@@ -20,7 +20,7 @@ from backend.app.models import AnalysisEvent, AnalysisRun, Dataset, timestamp
 from backend.app.services.engine import JSON_EXPORTS, EngineAdapter
 from backend.app.services.results import EXPORT_COLUMNS, ResultValidator
 
-SUPPORTED_ENGINE_PRODUCERS = {"0.2.0", "0.3.0"}
+SUPPORTED_ENGINE_PRODUCERS = {"0.2.0", "0.3.0", "0.3.1"}
 
 
 class AnalysisService:
@@ -129,7 +129,7 @@ class AnalysisService:
                 dataset_id=dataset_id,
                 request_key=request_key,
                 source=source,
-                engine_label="TraceGraph AI 0.3.0" if source == "command" else "Загруженные CSV",
+                engine_label="TraceGraph AI 0.3.1" if source == "command" else "Загруженные CSV",
             )
             db.add(run)
             try:
