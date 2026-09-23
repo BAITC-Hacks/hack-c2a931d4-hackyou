@@ -171,8 +171,10 @@ export const api = {
     request<NodePage>(`/analyses/${id}/nodes?${params}`),
   analysisNode: (id: string, gid: string) =>
     request<NodeDetail>(`/analyses/${id}/nodes/${encodeURIComponent(gid)}`),
-  nodeNeighborhood: (id: string, gid: string) =>
-    request<Neighborhood>(`/analyses/${id}/nodes/${encodeURIComponent(gid)}/neighborhood`),
+  nodeNeighborhood: (id: string, gid: string, limit = 12) =>
+    request<Neighborhood>(
+      `/analyses/${id}/nodes/${encodeURIComponent(gid)}/neighborhood?limit=${limit}`,
+    ),
   analysisEvents: (id: string) => request<AnalysisEvent[]>(`/analyses/${id}/events`),
   startAnalysis: (datasetId: string, requestKey: string) =>
     request<Analysis>(`/datasets/${datasetId}/analyses`, {

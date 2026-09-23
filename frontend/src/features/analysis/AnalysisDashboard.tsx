@@ -395,6 +395,16 @@ export function AnalysisDashboard({ run, dataset }: { run: Analysis; dataset: Da
               {summary.model_backend && ` · ${summary.model_backend}`}
             </p>
             {summary.fallback_reason && <p className="micro">{summary.fallback_reason}</p>}
+            <div className="excel-export">
+              <a className="button" href={`/api/v1/analyses/${run.id}/excel`} download>
+                <Download size={17} /> Скачать для Excel · .xlsx
+              </a>
+              <p className="micro">
+                Три листа: приоритеты, участники, сообщества. Русский текст и полные GID
+                сохраняются; идентификаторы записаны как текст.
+              </p>
+            </div>
+            <p className="micro">Исходные файлы движка · CSV в UTF-8 и JSON</p>
             <div className="export-links">
               {downloadFiles.map((file) => (
                 <a
