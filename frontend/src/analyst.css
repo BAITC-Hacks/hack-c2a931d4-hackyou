@@ -934,11 +934,188 @@
 .evidence-group.limitation li {
   border-color: #d9c997;
 }
-.graph-workspace {
+.excel-export {
+  margin: 20px 0;
+}
+.excel-export .micro {
+  margin-top: 10px;
+  line-height: 1.7;
+}
+.graph-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.graph-totals {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 22px;
-  align-items: start;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+  padding: 20px 24px;
+  background: #f7faf3;
+  border-block: 1px solid #e6eddf;
+}
+.graph-totals > div {
+  border-left: 3px solid #719c43;
+  padding-left: 16px;
+}
+.graph-totals > .incoming {
+  border-color: #4c879c;
+}
+.graph-totals span,
+.graph-totals small {
+  display: block;
+  font-size: 12px;
+  color: #677461;
+}
+.graph-totals strong {
+  display: block;
+  font-size: 25px;
+  font-weight: 550;
+  margin: 8px 0;
+}
+.graph-totals p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #677461;
+  align-self: center;
+}
+.graph-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px 24px;
+}
+.graph-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.graph-toolbar select {
+  padding: 7px 10px;
+  border: 1px solid #dbe4d1;
+  border-radius: 8px;
+  background: white;
+}
+.flow-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  background: #f3f6ee;
+  border-radius: 10px;
+  padding: 4px;
+}
+.flow-switch button {
+  border: 0;
+  background: transparent;
+  padding: 9px 12px;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12px;
+  color: #677461;
+  cursor: pointer;
+}
+.flow-switch button[aria-pressed='true'] {
+  background: #fff;
+  color: #304d25;
+  box-shadow: 0 1px 5px #263a1412;
+}
+.flow-column-title {
+  text-anchor: middle;
+  font-size: 12px;
+  fill: #6b7962;
+  letter-spacing: 1px;
+}
+.money-path {
+  fill: none;
+  stroke-width: 2;
+}
+.money-path.incoming {
+  stroke: #4c879c;
+}
+.money-path.outgoing {
+  stroke: #719c43;
+}
+.money-path.selected {
+  stroke-width: 4;
+}
+.selected-flow {
+  margin: 0 24px 20px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  background: #f2f7eb;
+  border: 1px solid #cddfbb;
+  border-radius: 12px;
+}
+.selected-flow > div {
+  display: grid;
+  gap: 6px;
+}
+.selected-flow span {
+  font-size: 11px;
+  color: #6e7d61;
+}
+.selected-flow > div > button {
+  font: inherit;
+  font-size: 13px;
+  color: #375328;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.selected-flow > .icon-button {
+  margin-left: auto;
+}
+.flow-table {
+  padding: 20px 24px;
+  border-top: 1px solid #eaf0e0;
+}
+.flow-table summary {
+  cursor: pointer;
+  font-size: 13px;
+}
+.flow-table .micro {
+  margin: 12px 0;
+  line-height: 1.7;
+}
+.flow-table > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 15px 0;
+  background: none;
+  color: #486039;
+  border: 0;
+  border-bottom: 1px solid #edf1e7;
+  text-align: left;
+  cursor: pointer;
+}
+.flow-table code {
+  overflow-wrap: anywhere;
+}
+.flow-table strong {
+  margin-left: auto;
+}
+.flow-table span {
+  font-size: 12px;
+}
+.self-transfer {
+  margin: 14px 24px;
+  padding: 12px 18px;
+  background: #f5f8ef;
+  border: 1px solid #dce6cf;
+  border-radius: 10px;
+  cursor: pointer;
 }
 .graph-panel {
   scroll-margin-top: 82px;
@@ -959,7 +1136,7 @@
   margin-bottom: 9px;
 }
 .graph-heading .micro {
-  font-size: 10px;
+  font-size: 12px;
   overflow-wrap: anywhere;
 }
 .graph-controls {
@@ -976,12 +1153,11 @@
   justify-content: space-between;
   gap: 8px;
   padding: 0 22px 15px;
-  font-size: 9px;
+  font-size: 12px;
   color: #8a967f;
 }
 .graph-canvas {
   overflow: auto;
-  max-height: 625px;
   background-color: #fff;
   background-image: radial-gradient(#e9efdf 0.7px, transparent 0.7px);
   background-size: 18px 18px;
@@ -1005,37 +1181,54 @@
   user-select: none;
 }
 .graph-node-short {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 550;
 }
 .graph-node .graph-gid {
-  font-size: 12px;
+  font-size: 13px;
   fill: #5c6b53;
 }
 .graph-node .graph-role {
-  font-size: 11px;
+  font-size: 12px;
   fill: #8b9781;
 }
 .graph-focus-label {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1px;
 }
 .edge-label rect {
-  fill: #fffffff2;
+  fill: #fff;
+  stroke: #e4ebe0;
+}
+.edge-label {
+  cursor: pointer;
+  outline: none;
+}
+.edge-label:hover rect,
+.edge-label:focus-visible rect,
+.edge-label.selected rect {
+  stroke: #789e58;
+  stroke-width: 2;
+  fill: #f7fbf2;
+}
+.edge-label.incoming text {
+  fill: #376e81;
 }
 .edge-label text {
-  fill: #738166;
-  font-size: 12px;
+  fill: #4e7132;
+  font-size: 16px;
+  font-weight: 550;
   text-anchor: middle;
 }
 .edge-label .edge-count {
-  fill: #a2ab97;
-  font-size: 10px;
+  fill: #7b8971;
+  font-size: 12px;
+  font-weight: 400;
 }
 .graph-limit {
   margin: 0;
   padding: 12px 22px;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.6;
   color: #877b51;
   background: #faf8ee;
@@ -1047,7 +1240,7 @@
   flex-wrap: wrap;
   gap: 10px;
   padding: 17px 22px;
-  font-size: 9px;
+  font-size: 11px;
   color: #7b8a6e;
   border-top: 1px solid #eaf0e0;
 }
@@ -1065,7 +1258,7 @@
 }
 .graph-disclaimer {
   padding: 15px 22px;
-  font-size: 9px;
+  font-size: 11px;
   color: #8a957f;
   line-height: 1.7;
   background: #fbfcf8;
@@ -1141,6 +1334,35 @@
   }
 }
 @media (max-width: 750px) {
+  .graph-totals {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 16px;
+  }
+  .graph-totals strong {
+    font-size: 19px;
+  }
+  .graph-totals p {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .graph-toolbar {
+    padding: 16px;
+  }
+  .flow-switch {
+    width: 100%;
+  }
+  .flow-switch button {
+    flex: 1;
+    font-size: 11px;
+    padding: 8px;
+  }
+  .flow-table > button {
+    display: grid;
+  }
+  .flow-table strong {
+    margin: 0;
+  }
   .modern-shell .main-content {
     padding: 24px 18px;
   }
