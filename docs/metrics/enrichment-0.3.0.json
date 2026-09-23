@@ -1,0 +1,654 @@
+{
+  "synthetic": {
+    "scope": "synthetic_known_answer_algorithm_checks",
+    "passed": true,
+    "limitations": [
+      "Eight small scenarios do not estimate performance on real investigations.",
+      "Metrics concern observed path/motif availability, not AML or criminal classification.",
+      "Role/confidence calibration and analyst usefulness require separately labelled real cases."
+    ],
+    "fixture": {
+      "n_nodes": 20,
+      "n_transactions": 18,
+      "duplicate_rows_beyond_first": 1,
+      "all_gids_above_js_safe_integer": true,
+      "analysis_seconds": 1.882523
+    },
+    "scenario_count": 8,
+    "seed_path_availability": {
+      "true_positive": 2,
+      "false_positive": 0,
+      "false_negative": 0,
+      "true_negative": 6,
+      "precision": 1.0,
+      "recall": 1.0,
+      "accuracy": 1.0,
+      "label_scope": "explicit_synthetic_scenario_expectations"
+    },
+    "dated_return_availability": {
+      "true_positive": 2,
+      "false_positive": 0,
+      "false_negative": 0,
+      "true_negative": 6,
+      "precision": 1.0,
+      "recall": 1.0,
+      "accuracy": 1.0,
+      "label_scope": "explicit_synthetic_scenario_expectations"
+    },
+    "valid_paths": {
+      "valid": 4,
+      "total": 4,
+      "fraction": 1.0
+    },
+    "valid_cited_references": {
+      "valid": 31,
+      "total": 31,
+      "fraction": 1.0
+    },
+    "baseline_comparison": {
+      "scenario": "alternative_temporal_route",
+      "baseline_method": "explain_node_one_topology_shortest_path_per_seed",
+      "baseline_selected_path_hops": [
+        2
+      ],
+      "baseline_compatible_path_count": 0,
+      "enrichment_compatible_path_count": 1,
+      "enrichment_path_hops": [
+        3
+      ],
+      "recovered_previously_missed_route": true,
+      "scope": "single_deliberate_known_answer_counterexample_not_population_accuracy_gain"
+    },
+    "global_analysis_unchanged": true,
+    "retained_transaction_count": 18,
+    "retained_duplicate_rows_beyond_first": 1,
+    "elapsed_seconds": 0.07268,
+    "median_case_seconds": 0.006069,
+    "max_case_seconds": 0.012808,
+    "cases": [
+      {
+        "name": "alternative_temporal_route",
+        "target_gid": "100000000000000006",
+        "expected": {
+          "seed_path": true,
+          "dated_return": false
+        },
+        "expected_hops": 3,
+        "observed": {
+          "seed_path": true,
+          "dated_return": false
+        },
+        "valid_paths": {
+          "valid": 1,
+          "total": 1,
+          "fraction": 1.0
+        },
+        "valid_cited_references": {
+          "valid": 6,
+          "total": 6,
+          "fraction": 1.0
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [
+          3
+        ],
+        "path_same_day_flags": [
+          false
+        ],
+        "return_hops": [],
+        "path_tx_ids": [
+          [
+            "row-00000003",
+            "row-00000005",
+            "row-00000006"
+          ]
+        ],
+        "return_tx_ids": [],
+        "status": "complete",
+        "elapsed_seconds": 0.008033,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "work_units": 68,
+        "expectations_match": true
+      },
+      {
+        "name": "reversed_only_route",
+        "target_gid": "100000000000000014",
+        "expected": {
+          "seed_path": false,
+          "dated_return": false
+        },
+        "observed": {
+          "seed_path": false,
+          "dated_return": false
+        },
+        "valid_paths": {
+          "valid": 0,
+          "total": 0,
+          "fraction": null
+        },
+        "valid_cited_references": {
+          "valid": 2,
+          "total": 2,
+          "fraction": 1.0
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [],
+        "path_same_day_flags": [],
+        "return_hops": [],
+        "path_tx_ids": [],
+        "return_tx_ids": [],
+        "status": "complete",
+        "elapsed_seconds": 0.003727,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "work_units": 41,
+        "expectations_match": true
+      },
+      {
+        "name": "same_day_route",
+        "target_gid": "100000000000000024",
+        "expected": {
+          "seed_path": true,
+          "dated_return": false
+        },
+        "expected_same_day": true,
+        "observed": {
+          "seed_path": true,
+          "dated_return": false
+        },
+        "valid_paths": {
+          "valid": 1,
+          "total": 1,
+          "fraction": 1.0
+        },
+        "valid_cited_references": {
+          "valid": 4,
+          "total": 4,
+          "fraction": 1.0
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [
+          2
+        ],
+        "path_same_day_flags": [
+          true
+        ],
+        "return_hops": [],
+        "path_tx_ids": [
+          [
+            "row-00000009",
+            "row-00000010"
+          ]
+        ],
+        "return_tx_ids": [],
+        "status": "complete",
+        "elapsed_seconds": 0.004105,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "work_units": 41,
+        "expectations_match": true
+      },
+      {
+        "name": "date_filter_removes_valid_route",
+        "target_gid": "100000000000000006",
+        "expected": {
+          "seed_path": false,
+          "dated_return": false
+        },
+        "config": {
+          "start_date": "2026-07-04",
+          "end_date": "2026-07-31"
+        },
+        "observed": {
+          "seed_path": false,
+          "dated_return": false
+        },
+        "valid_paths": {
+          "valid": 0,
+          "total": 0,
+          "fraction": null
+        },
+        "valid_cited_references": {
+          "valid": 2,
+          "total": 2,
+          "fraction": 1.0
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [],
+        "path_same_day_flags": [],
+        "return_hops": [],
+        "path_tx_ids": [],
+        "return_tx_ids": [],
+        "status": "complete",
+        "elapsed_seconds": 0.003789,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "work_units": 37,
+        "expectations_match": true
+      },
+      {
+        "name": "compatible_two_step_return",
+        "target_gid": "100000000000000032",
+        "expected": {
+          "seed_path": false,
+          "dated_return": true
+        },
+        "expected_return_hops": 2,
+        "observed": {
+          "seed_path": false,
+          "dated_return": true
+        },
+        "valid_paths": {
+          "valid": 1,
+          "total": 1,
+          "fraction": 1.0
+        },
+        "valid_cited_references": {
+          "valid": 6,
+          "total": 6,
+          "fraction": 1.0
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [],
+        "path_same_day_flags": [],
+        "return_hops": [
+          2
+        ],
+        "path_tx_ids": [],
+        "return_tx_ids": [
+          [
+            "row-00000011",
+            "row-00000012"
+          ]
+        ],
+        "status": "complete",
+        "elapsed_seconds": 0.011988,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "work_units": 60,
+        "expectations_match": true
+      },
+      {
+        "name": "compatible_three_step_return",
+        "target_gid": "100000000000000042",
+        "expected": {
+          "seed_path": false,
+          "dated_return": true
+        },
+        "expected_return_hops": 3,
+        "observed": {
+          "seed_path": false,
+          "dated_return": true
+        },
+        "valid_paths": {
+          "valid": 1,
+          "total": 1,
+          "fraction": 1.0
+        },
+        "valid_cited_references": {
+          "valid": 7,
+          "total": 7,
+          "fraction": 1.0
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [],
+        "path_same_day_flags": [],
+        "return_hops": [
+          3
+        ],
+        "path_tx_ids": [],
+        "return_tx_ids": [
+          [
+            "row-00000013",
+            "row-00000014",
+            "row-00000015"
+          ]
+        ],
+        "status": "complete",
+        "elapsed_seconds": 0.012808,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "work_units": 68,
+        "expectations_match": true
+      },
+      {
+        "name": "reversed_three_step_return",
+        "target_gid": "100000000000000052",
+        "expected": {
+          "seed_path": false,
+          "dated_return": false
+        },
+        "observed": {
+          "seed_path": false,
+          "dated_return": false
+        },
+        "valid_paths": {
+          "valid": 0,
+          "total": 0,
+          "fraction": null
+        },
+        "valid_cited_references": {
+          "valid": 4,
+          "total": 4,
+          "fraction": 1.0
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [],
+        "path_same_day_flags": [],
+        "return_hops": [],
+        "path_tx_ids": [],
+        "return_tx_ids": [],
+        "status": "complete",
+        "elapsed_seconds": 0.012017,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "work_units": 67,
+        "expectations_match": true
+      },
+      {
+        "name": "isolated_seed",
+        "target_gid": "100000000000000062",
+        "expected": {
+          "seed_path": false,
+          "dated_return": false
+        },
+        "observed": {
+          "seed_path": false,
+          "dated_return": false
+        },
+        "valid_paths": {
+          "valid": 0,
+          "total": 0,
+          "fraction": null
+        },
+        "valid_cited_references": {
+          "valid": 0,
+          "total": 0,
+          "fraction": null
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [],
+        "path_same_day_flags": [],
+        "return_hops": [],
+        "path_tx_ids": [],
+        "return_tx_ids": [],
+        "status": "complete",
+        "elapsed_seconds": 0.003138,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "work_units": 21,
+        "expectations_match": true
+      }
+    ]
+  },
+  "real_snapshot": {
+    "scope": "unlabelled_real_snapshot_runtime_and_reference_integrity_only",
+    "analysis_id": "87832da405b2339855b8090fd1833c5960634b7f90758185a01164ba71156b51",
+    "result_fingerprint": "1696541e489cd629b906d61684ce31d55c8b70915bd6417e09b5530b8bd75f66",
+    "snapshot_load_seconds": 1.858884,
+    "global_analysis_unchanged": true,
+    "precision": null,
+    "recall": null,
+    "ground_truth_available": false,
+    "cases": [
+      {
+        "category": "highest_priority",
+        "target_gid": "100000003115284100",
+        "status": "complete",
+        "elapsed_seconds": 0.046526,
+        "finding_count": 13,
+        "work_units": 7746,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "observed": {
+          "seed_path": true,
+          "dated_return": true
+        },
+        "valid_paths": {
+          "valid": 6,
+          "total": 6,
+          "fraction": 1.0
+        },
+        "valid_cited_references": {
+          "valid": 185,
+          "total": 185,
+          "fraction": 1.0
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [
+          1,
+          1,
+          2,
+          2,
+          3
+        ],
+        "path_same_day_flags": [
+          false,
+          false,
+          true,
+          false,
+          false
+        ],
+        "return_hops": [
+          2
+        ],
+        "path_tx_ids": [
+          [
+            "row-00002791"
+          ],
+          [
+            "row-00002833"
+          ],
+          [
+            "row-00002905",
+            "row-00002833"
+          ],
+          [
+            "row-00002468",
+            "row-00002791"
+          ],
+          [
+            "row-00000351",
+            "row-00001802",
+            "row-00002791"
+          ]
+        ],
+        "return_tx_ids": [
+          [
+            "row-00000106",
+            "row-00000239"
+          ]
+        ]
+      },
+      {
+        "category": "counterfactual_not_precomputed",
+        "target_gid": "100000006274203100",
+        "status": "complete",
+        "elapsed_seconds": 0.049059,
+        "finding_count": 10,
+        "work_units": 9162,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "observed": {
+          "seed_path": true,
+          "dated_return": true
+        },
+        "valid_paths": {
+          "valid": 2,
+          "total": 2,
+          "fraction": 1.0
+        },
+        "valid_cited_references": {
+          "valid": 330,
+          "total": 330,
+          "fraction": 1.0
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [
+          4
+        ],
+        "path_same_day_flags": [
+          true
+        ],
+        "return_hops": [
+          2
+        ],
+        "path_tx_ids": [
+          [
+            "row-00001255",
+            "row-00001340",
+            "row-00002055",
+            "row-00001984"
+          ]
+        ],
+        "return_tx_ids": [
+          [
+            "row-00001519",
+            "row-00001484"
+          ]
+        ]
+      },
+      {
+        "category": "extraction_boundary",
+        "target_gid": "100000006638021100",
+        "status": "complete",
+        "elapsed_seconds": 0.043672,
+        "finding_count": 7,
+        "work_units": 8016,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "observed": {
+          "seed_path": true,
+          "dated_return": false
+        },
+        "valid_paths": {
+          "valid": 2,
+          "total": 2,
+          "fraction": 1.0
+        },
+        "valid_cited_references": {
+          "valid": 18,
+          "total": 18,
+          "fraction": 1.0
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [
+          4,
+          5
+        ],
+        "path_same_day_flags": [
+          false,
+          false
+        ],
+        "return_hops": [],
+        "path_tx_ids": [
+          [
+            "row-00000647",
+            "row-00002338",
+            "row-00004319",
+            "row-00004840"
+          ],
+          [
+            "row-00000035",
+            "row-00003226",
+            "row-00003365",
+            "row-00004191",
+            "row-00004808"
+          ]
+        ],
+        "return_tx_ids": []
+      },
+      {
+        "category": "isolated",
+        "target_gid": "100000000456947100",
+        "status": "complete",
+        "elapsed_seconds": 0.083326,
+        "finding_count": 1,
+        "work_units": 4843,
+        "agent_statuses": {
+          "paths": "complete",
+          "patterns": "complete",
+          "alternatives": "complete"
+        },
+        "agent_errors": {},
+        "observed": {
+          "seed_path": false,
+          "dated_return": false
+        },
+        "valid_paths": {
+          "valid": 0,
+          "total": 0,
+          "fraction": null
+        },
+        "valid_cited_references": {
+          "valid": 0,
+          "total": 0,
+          "fraction": null
+        },
+        "ledger_rows_match_source": true,
+        "all_citations_accounted_for": true,
+        "path_hops": [],
+        "path_same_day_flags": [],
+        "return_hops": [],
+        "path_tx_ids": [],
+        "return_tx_ids": []
+      }
+    ]
+  }
+}
