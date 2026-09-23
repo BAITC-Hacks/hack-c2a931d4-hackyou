@@ -8,7 +8,7 @@ from numbers import Integral, Real
 from pathlib import Path
 
 SCHEMA_VERSION = "1.0"
-ENGINE_VERSION = "0.1.0"
+ENGINE_VERSION = "0.2.0"
 ID_FIELDS = {"gid", "src", "dst", "target_gid", "source_gid"}
 ID_LIST_FIELDS = {"reachable_seed_ids", "top_gids", "target_gids", "related_gids", "seed_ids"}
 

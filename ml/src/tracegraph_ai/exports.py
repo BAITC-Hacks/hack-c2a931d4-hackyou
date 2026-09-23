@@ -17,7 +17,7 @@ def _csv(path, columns, rows):
         writer.writerows(rows)
 
 
-def export_results(output_dir, analysis, graph, validation, model):
+def export_results(output_dir, analysis, graph, validation, model, transactions=None):
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
     nodes = analysis["nodes"]
@@ -44,4 +44,13 @@ def export_results(output_dir, analysis, graph, validation, model):
     for name, content in [("analysis_bundle", analysis), ("graph_bundle", graph),
                           ("validation_report", validation), ("model_info", model)]:
         write_json(destination / f"{name}.json", content)
+    if transactions is not None:
+        from .persistence import write_manifest
+        write_json(destination / "transactions_bundle.json", {
+            "schema_version": analysis["schema_version"], "analysis_id": analysis["analysis_id"],
+            "transactions": transactions,
+            "tx_id_scope": "source_file_row_within_analysis",
+            "source_hash": analysis["metadata"]["input_hashes"]["transactions"],
+        })
+        write_manifest(destination, analysis)
     return json_safe({"output_dir": str(destination.resolve()), "node_count": len(nodes)})
