@@ -201,6 +201,12 @@ def _evidence(gid, node, ranks, boundary, anomaly, counterfactual):
                 f"{label}: {_unit(node[field]):.3f}; "
                 f"активных дней входа/выхода: {int(_number(node.get('incoming_active_days')))}/"
                 f"{int(_number(node.get('outgoing_active_days')))}.", source="temporal_features")
+    if node.get("temporal_episodes"):
+        add("linked_temporal_episode", "temporal", _unit(node.get("temporal_coordination_score")),
+            f"Связанные по датам входящие и исходящие эпизоды: {node.get('temporal_episode_count', 0)}; "
+            f"максимальный сигнал координации {_unit(node.get('temporal_coordination_score')):.3f}. "
+            "Совместимость сумм не устанавливает тождество денег; порядок внутри дня неизвестен.",
+            source="temporal_features", category="inference", episodes=node["temporal_episodes"])
     if _unit(node.get("rapid_pass_through_score")) > 0 or node.get("same_day_ambiguity"):
         add("daily_time_resolution", "observability", 1,
             "Точность дат — 1 день: порядок внутри дня и тождество поступивших/отправленных денег не установлены.",
@@ -277,6 +283,7 @@ def infer_roles(features: dict[int, dict], config: dict,
         )
         temporal_in = _unit(node.get("synchronized_fan_in_score"))
         temporal_out = _unit(node.get("synchronized_fan_out_score"))
+        temporal_coordination = _unit(node.get("temporal_coordination_score"))
         throughput = min(inflow, outflow)
         signals = {
             "in_degree_signal": p["in_degree"], "incoming_volume_signal": inflow,
@@ -293,7 +300,7 @@ def infer_roles(features: dict[int, dict], config: dict,
                 node["retention_ratio"]),
             "inflow_signal": inflow, "pagerank_signal": p["pagerank"], "bridge_signal": bridge,
             "disruption_signal": _unit(cf.get("disruption_score")) if cf else 0.0,
-            "temporal_coordination_signal": min(temporal_in, temporal_out),
+            "temporal_coordination_signal": temporal_coordination,
         }
         eligible = {
             "consolidator": in_degree >= 2 and incoming > 0,
@@ -333,7 +340,7 @@ def infer_roles(features: dict[int, dict], config: dict,
                             "topology": p["downstream_reach"], "temporal": temporal_out},
             "terminal": {"flow": 1.0},
             "coordinator": {"flow": throughput, "seed": seed_signal, "topology": structural,
-                            "community": bridge, "temporal": min(temporal_in, temporal_out)},
+                            "community": bridge, "temporal": temporal_coordination},
             "peripheral": {"flow": strength if not isolated else 0.0},
         }[role]
         supporting = [name for name, value in support.items() if value is not None and value >= 0.45]
