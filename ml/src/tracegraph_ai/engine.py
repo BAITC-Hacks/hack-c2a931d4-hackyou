@@ -27,6 +27,7 @@ class TraceGraph:
         self._result_hash = None
         self._transactions = []
         self._evidence_index = None
+        self._enrichment_cache = {}
 
     def analyze(self, nodes_path, edges_path, transactions_path, *, output_dir=None, progress=None) -> dict:
         from .anomaly import score_anomalies
@@ -41,6 +42,7 @@ class TraceGraph:
         self._nodes = {}
         self._transactions = []
         self._evidence_index = None
+        self._enrichment_cache = {}
         started = time.perf_counter()
         timings = {}
 
@@ -129,7 +131,7 @@ class TraceGraph:
 
     @classmethod
     def load_analysis(cls, directory):
-        """Restore an exported 0.2 snapshot without training or the source Parquet files."""
+        """Restore a supported snapshot without training or the source Parquet files."""
         from .persistence import load_snapshot
         bundles, config = load_snapshot(directory)
         engine = cls(config)
@@ -176,6 +178,12 @@ class TraceGraph:
         gid = str(self._node(gid)["gid"])
         return self._with_header(self._evidence_index.explain_node(
             gid, max_paths=max_paths, max_hops=max_hops, max_transactions=max_transactions))
+
+    def enrich_investigation(self, gid, config=None, *, use_cache=True, progress=None) -> dict:
+        """Build a cited dossier with three bounded, independent analytical agents."""
+        from .enrichment.orchestrator import run
+        self._ready()
+        return run(self, gid, config, use_cache=use_cache, progress=progress)
 
     def _ready(self):
         if self._analysis is None:

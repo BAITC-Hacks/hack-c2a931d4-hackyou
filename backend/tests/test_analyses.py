@@ -1,4 +1,6 @@
 import csv
+import hashlib
+import json
 import time
 from io import StringIO
 from threading import Event
@@ -9,8 +11,10 @@ from fastapi.testclient import TestClient
 
 from backend.app.config import Settings
 from backend.app.database import Database
+from backend.app.errors import AppError
 from backend.app.main import create_app
 from backend.app.models import AnalysisRun
+from backend.app.services.engine import JSON_EXPORTS
 from backend.app.services.results import ResultValidator
 from backend.tests.test_cases import BIG_GID, create_case, parquet_files
 
@@ -240,3 +244,57 @@ def test_tampered_export_and_unknown_paths(client, settings):
     assert client.get(f"/api/v1/analyses/{run['id']}/exports/worker.lock").status_code == 404
     assert submit(client, str(uuid4())).status_code == 404
     assert client.get(f"/api/v1/analyses/{uuid4()}/events").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "producer,manifest_version,accepted",
+    [
+        ("0.2.0", "0.2.0", True),
+        ("0.3.0", "0.3.0", True),
+        ("0.2.0", "0.3.0", False),
+        ("0.3.0", "0.2.0", False),
+        ("0.4.0", "0.4.0", False),
+    ],
+)
+def test_snapshot_producer_versions_must_be_supported_and_consistent(
+    client, tmp_path, producer, manifest_version, accepted
+):
+    output = tmp_path / "versioned-output"
+    output.mkdir()
+    header = {"schema_version": "1.0", "analysis_id": "version-contract-fixture"}
+    input_hashes = {name: "a" * 64 for name in ("nodes", "edges", "transactions")}
+    expected = [
+        {"name": f"{name}.parquet", "sha256": value} for name, value in input_hashes.items()
+    ]
+    files = [{"name": f"{name}.csv", "sha256": "b" * 64} for name in results_rows()]
+    hashes = {item["name"]: item["sha256"] for item in files}
+    for name in JSON_EXPORTS:
+        if name == "manifest.json":
+            continue
+        bundle = dict(header)
+        if name == "analysis_bundle.json":
+            bundle.update(
+                metadata={"engine_version": producer, "input_hashes": input_hashes},
+                summary={"n_nodes": 5, "elapsed_seconds": 0, "limitations": []},
+            )
+        if name == "model_info.json":
+            bundle["backend"] = "isolation_forest"
+        content = json.dumps(bundle).encode("utf-8")
+        (output / name).write_bytes(content)
+        hashes[name] = hashlib.sha256(content).hexdigest()
+    (output / "manifest.json").write_text(
+        json.dumps(
+            {**header, "snapshot_version": 1, "engine_version": manifest_version, "files": hashes}
+        ),
+        encoding="utf-8",
+    )
+    summary = {"n_nodes": 5, "warnings": []}
+    service = client.app.state.analyses
+    if accepted:
+        service._engine_metadata(output, summary, files, expected)
+        assert summary["model_backend"] == "isolation_forest"
+        assert summary["engine_analysis_id"] == header["analysis_id"]
+    else:
+        with pytest.raises(AppError) as caught:
+            service._engine_metadata(output, summary, files, expected)
+        assert caught.value.code == "invalid_output"

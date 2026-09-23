@@ -11,6 +11,7 @@ from .evidence import date_range
 from .serialization import ENGINE_VERSION, SCHEMA_VERSION, canonical_hash, parse_gid, write_json
 
 SNAPSHOT_VERSION = 1
+SUPPORTED_ANALYSIS_VERSIONS = {"0.2.0", ENGINE_VERSION}
 BUNDLE_NAMES = ("analysis_bundle", "graph_bundle", "validation_report", "model_info", "transactions_bundle")
 ARTIFACT_NAMES = tuple(f"{name}.json" for name in BUNDLE_NAMES) + (
     "nodes_roles.csv", "clusters.csv", "top_nodes.csv")
@@ -28,7 +29,7 @@ def write_manifest(directory, analysis):
     directory = Path(directory)
     write_json(directory / "manifest.json", {
         "snapshot_version": SNAPSHOT_VERSION, "schema_version": SCHEMA_VERSION,
-        "engine_version": ENGINE_VERSION, "analysis_id": analysis["analysis_id"],
+        "engine_version": analysis["metadata"]["engine_version"], "analysis_id": analysis["analysis_id"],
         "result_fingerprint": analysis["result_fingerprint"],
         "files": {name: _file_hash(directory / name) for name in ARTIFACT_NAMES},
     })
@@ -54,8 +55,8 @@ def load_snapshot(directory):
         manifest = _strict_json(directory / "manifest.json")
         if manifest["snapshot_version"] != SNAPSHOT_VERSION or manifest["schema_version"] != SCHEMA_VERSION:
             raise ValueError("Unsupported snapshot/schema version")
-        if manifest["engine_version"] != ENGINE_VERSION:
-            raise ValueError(f"Snapshot requires tracegraph-ai {manifest['engine_version']}")
+        if manifest["engine_version"] not in SUPPORTED_ANALYSIS_VERSIONS:
+            raise ValueError(f"Unsupported analysis producer: {manifest['engine_version']}")
         if set(manifest["files"]) != set(ARTIFACT_NAMES):
             raise ValueError("Unexpected or missing snapshot files")
         for name in ARTIFACT_NAMES:
@@ -67,7 +68,7 @@ def load_snapshot(directory):
                 raise ValueError(f"Inconsistent analysis header: {name}")
         analysis = bundles["analysis_bundle"]
         config = AnalysisConfig(**analysis["metadata"]["config"]).to_dict()
-        if analysis["metadata"]["engine_version"] != ENGINE_VERSION:
+        if analysis["metadata"]["engine_version"] != manifest["engine_version"]:
             raise ValueError("Inconsistent engine version")
         result_hash = canonical_hash({"nodes": analysis["nodes"], "clusters": analysis["clusters"]})
         if result_hash != manifest["result_fingerprint"] or result_hash != analysis["result_fingerprint"]:

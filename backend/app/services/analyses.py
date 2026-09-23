@@ -20,6 +20,8 @@ from backend.app.models import AnalysisEvent, AnalysisRun, Dataset, timestamp
 from backend.app.services.engine import JSON_EXPORTS, EngineAdapter
 from backend.app.services.results import EXPORT_COLUMNS, ResultValidator
 
+SUPPORTED_ENGINE_PRODUCERS = {"0.2.0", "0.3.0"}
+
 
 class AnalysisService:
     def __init__(self, database: Database, settings: Settings):
@@ -127,7 +129,7 @@ class AnalysisService:
                 dataset_id=dataset_id,
                 request_key=request_key,
                 source=source,
-                engine_label="TraceGraph AI 0.2.0" if source == "command" else "Загруженные CSV",
+                engine_label="TraceGraph AI 0.3.0" if source == "command" else "Загруженные CSV",
             )
             db.add(run)
             try:
@@ -338,13 +340,16 @@ class AnalysisService:
             files.append({"name": filename, "size_bytes": path.stat().st_size, "sha256": digest})
         analysis = bundles["analysis_bundle.json"]
         manifest = bundles["manifest.json"]
+        metadata = analysis.get("metadata")
         expected_exports = {
             item["name"]: item["sha256"] for item in files if item["name"] != "manifest.json"
         }
         if (
             manifest.get("snapshot_version") != 1
             or manifest.get("files") != expected_exports
-            or manifest.get("engine_version") != "0.2.0"
+            or manifest.get("engine_version") not in SUPPORTED_ENGINE_PRODUCERS
+            or not isinstance(metadata, dict)
+            or metadata.get("engine_version") != manifest.get("engine_version")
         ):
             raise AppError("invalid_output", "Некорректный манифест снимка движка.")
         analysis_id = analysis.get("analysis_id")
@@ -355,7 +360,7 @@ class AnalysisService:
         ):
             raise AppError("invalid_output", "JSON-артефакты относятся к разным анализам.")
         hashes = {Path(item["name"]).stem: item["sha256"] for item in expected}
-        if analysis.get("metadata", {}).get("input_hashes") != hashes:
+        if metadata.get("input_hashes") != hashes:
             raise AppError(
                 "invalid_output", "Результаты движка относятся к другим исходным файлам."
             )

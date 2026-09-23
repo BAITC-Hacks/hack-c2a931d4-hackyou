@@ -1,6 +1,6 @@
 # Fullstack and ML integration contract
 
-Status: analysis is integrated with TraceGraph AI 0.2.0. The authoritative SDK contract is [ai-engine-contract.md](ai-engine-contract.md); the investigation section below describes the planned platform boundary, not shipped HTTP endpoints. No fullstack changes are made inside ml/.
+Status: analysis is integrated with TraceGraph AI 0.3.0; saved 0.2.0 snapshots remain readable. The authoritative SDK contract is [ai-engine-contract.md](ai-engine-contract.md); the investigation section below describes the planned platform boundary, not shipped HTTP endpoints. No fullstack changes are made inside ml/.
 
 The fullstack-owned backend/engine_worker.py calls TraceGraph.analyze() in .venv-engine, then load_analysis() to verify snapshot restoration without training. A single background executor serializes jobs; each uses a separate process and input/output directory. Every run has a persisted UUID distinct from the engine's content-derived analysis_id. Progress callbacks become durable events and the UI polls them. Timeout/cancellation terminates the owned process tree; EOF on the parent's pipe stops the worker if the API exits unexpectedly. Startup marks unfinished jobs interrupted; it never silently reruns them. Only one API worker may own each storage directory.
 
