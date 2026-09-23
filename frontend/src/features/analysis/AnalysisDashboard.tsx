@@ -404,7 +404,7 @@ export function AnalysisDashboard({ run, dataset }: { run: Analysis; dataset: Da
                 сохраняются; идентификаторы записаны как текст.
               </p>
             </div>
-            <p className="micro">Исходные файлы движка · CSV в UTF-8 и JSON</p>
+            <p className="micro">Три результата анализа · CSV в UTF-8</p>
             <div className="export-links">
               {downloadFiles.map((file) => (
                 <a
