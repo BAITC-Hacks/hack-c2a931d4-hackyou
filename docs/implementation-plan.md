@@ -20,4 +20,10 @@ Checkpoints 1–4 are implemented. Checkpoint 4 includes the real TraceGraph 0.2
 
 Verified locally on 2026-09-23: 33 backend tests (including real SDK integration and process cancellation/timeout), 24 ML tests and 4 frontend tests passed; Ruff, frontend formatting and production build passed. Browser validation on the supplied 2,248-node dataset showed 91 communities and CPU Autoencoder, approximately 17 seconds on the engine's internal timer. Reload restored the result; the Top-20 table had 20 data rows and no browser console errors. The first pre-fix Windows launch timed out because a blocking stdin watcher conflicted with NumPy native initialization; a nonblocking pipe probe fixed it. The failed run remains visible in the QA case history.
 
-Checkpoint 5 next: node profiles, transaction pages and evidence via the new snapshot SDK. Graph exploration and persisted agent investigations still need HTTP/UI integration; their SDK methods exist but are not exposed by the web app yet.
+## Analyst overview and neighborhood explorer
+
+Checkpoint 5 now includes a full paginated node roster, combined role/priority/GID filters, linked role donut and priority histogram, and a node profile with observed flows, role scores, priority signals and grouped evidence. Existing saved runs work without recalculation. CSV-only imports retain the overview and concise profiles, with detailed snapshot features explicitly unavailable.
+
+Checkpoint 6 now includes a directed one-hop graph with amounts, transaction counts, selectable neighbors, back navigation and zoom. The light workspace follows the supplied visual reference, with the graph beside the selected profile. The 12-neighbor view discloses its scope; the API preserves reciprocal edges, self-loops and isolates. Full graph layouts, cluster expansion, edge/transaction inspection and evidence highlighting remain unfinished. Agent investigation sessions and the transaction timeline remain separate later stages.
+
+Validation for this increment: 39 backend transport/read tests and 4 existing frontend tests pass; production build and Ruff pass. New tests cover all-node distributions beyond Top-20, exact bucket boundaries, combined filters, pagination, int64 IDs, CSV-only profiles, per-run isolation, graph direction/limits/self-loops/isolates, and tampered snapshots. No code under `ml/` was changed.

@@ -20,9 +20,9 @@ export function App() {
   const [help, setHelp] = useState(false);
   const health = useQuery({ queryKey: ['health'], queryFn: api.health, refetchInterval: 30_000 });
   return (
-    <div className="app-shell">
+    <div className="app-shell modern-shell">
       <aside className="sidebar">
-        <Link className="brand" to="/">
+        <Link className="brand" to="/" aria-label="TraceGraph · список кейсов">
           <span>
             <Network size={24} />
           </span>
@@ -31,10 +31,15 @@ export function App() {
           </div>
         </Link>
         <div className="sidebar-section">РАБОЧЕЕ МЕСТО</div>
-        <Link to="/" className="nav-link">
+        <Link to="/" className="nav-link" aria-label="Кейсы" title="Кейсы">
           <FolderOpen size={19} /> Кейсы <ChevronRight size={16} />
         </Link>
-        <button className="nav-link help-link" onClick={() => setHelp(true)}>
+        <button
+          className="nav-link help-link"
+          aria-label="Как это работает"
+          title="Как это работает"
+          onClick={() => setHelp(true)}
+        >
           <CircleHelp size={19} /> Как это работает
         </button>
         <div className="sidebar-bottom">
@@ -98,8 +103,9 @@ export function App() {
             </p>
             <p>
               4. Запустите анализ сети: изучите рейтинг клиентов и скачайте CSV и JSON. Каждый
-              запуск сохраняется в истории выбранного набора. Граф и AI-расследования будут
-              подключены следующими этапами.
+              запуск сохраняется в истории выбранного набора. Нажмите на роль или интервал
+              приоритета, чтобы отобрать участников. Откройте GID для объяснений и перехода к графу
+              соседних переводов. AI-расследования будут подключены следующим этапом.
             </p>
           </div>
           <button className="button primary" onClick={() => setHelp(false)}>
