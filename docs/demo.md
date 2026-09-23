@@ -1,40 +1,53 @@
 # Демонстрация движка за пять минут
 
-## Первая минута — живой расчёт
+## Первая минута — расчёт и сохранение
 
-Из корня проекта запустить `python -m tracegraph_ai --input data --output out` в подготовленном окружении. Показать сводку: число узлов, рёбер, операций, сообществ и фактический backend. Открыть `out/model_info.json`: модель работает на CPU, её назначение — необычность профиля.
+Из корня проекта запустите в подготовленном окружении:
 
-## Вторая минута — приоритет и объяснение
-
-Открыть `out/top_nodes.csv`, выбрать первую строку по рассчитанному приоритету. В `analysis_bundle.json` найти ту же строку gid и показать `why`, `priority_components`, `role_strength`, `confidence` и evidence с числами. CSV и JSON сохраняют точный идентификатор; модель не присваивает роль.
-
-## Третья минута — два контрпримера
-
-В `analysis_bundle.json` выбрать узел с `truncated_by_depth=true`: нулевые исходящие сопровождаются ограничением, а не уверенным terminal. Затем выбрать `role_ambiguity=true` и показать альтернативную роль, обе силы гипотез и причину снижения confidence. Если нужен пример отсутствующих наблюдений, выбрать `is_isolated=true`: узел сохранён в графе и имеет peripheral.
-
-Для быстрого выбора из уже рассчитанного результата можно выполнить этот Python-код:
-
-```python
-import json
-from pathlib import Path
-
-bundle = json.loads(Path("out/analysis_bundle.json").read_text(encoding="utf-8"))
-nodes = bundle["nodes"]
-examples = [
-    max(nodes, key=lambda node: node["priority_score"]),
-    next(node for node in nodes if node["truncated_by_depth"]),
-    next(node for node in nodes if node["role_ambiguity"]),
-]
-for node in examples:
-    print(node["gid"], node["role"], node["confidence"], node["why"])
+```sh
+python -m tracegraph_ai --input data --output out
 ```
 
-Это выбор примеров по результатам текущего расчёта, без списка заранее назначенных ролей.
+Покажите сводку с числом узлов, рёбер, операций и backend. В `out/model_info.json` видно, какая модель фактически выполнилась. Каталог содержит девять файлов переносимого снимка, включая операции и `manifest.json`.
 
-## Четвёртая минута — интеграция и расследование
+## Вторая минута — конкретное объяснение
 
-Запустить `python ml/examples/integrate.py --input data --output out-sdk`. Пример получает Top-20, карточку, кластер и граф через публичные методы, сохраняет JSON ветки и демонстрирует её продолжение. В `out-sdk/investigation.json` показать reason → action → evidence → hypothesis, checkpoint после автоматической части и предел пяти шагов. Пояснить, что продолжение после checkpoint в платформе инициирует аналитик; пример имитирует эти действия автоматически.
+```sh
+python ml/examples/integrate.py --load out --output out-demo
+```
 
-## Пятая минута — передача платформе
+Команда загружает результат без чтения исходных Parquet и обучения, сохраняет снимок, восстанавливает его новым экземпляром и продолжает ветку. В `out-demo/explanation.json` покажите gid, гипотезу, confidence, выбранные пути от seed, операции и `evidence_support`. В `temporal_episodes` видны даты, суммы и ссылки на операции. Объясните ограничения: путь показывает наблюдаемые связи; дневные даты не определяют порядок внутри дня или идентичность денежных средств.
 
-Открыть `docs/ai-engine-contract.md`: строковые ID, схемы семи артефактов, методы SDK и ошибки. Показать `validation_report.json` со сверкой операций, coverage и устойчивостью Top-20. Инженер платформы получает SDK и graph bundle для экрана графа; все аналитические вычисления уже выполняет движок.
+## Третья минута — окрестность и контрпример
+
+В `out-demo/subgraph.json` покажите ограниченную окрестность, а в `transactions.json` — страницу связанных операций. Фильтрация периода доступна через SDK:
+
+```python
+from tracegraph_ai import TraceGraph
+
+engine = TraceGraph.load_analysis("out")
+gid = engine.get_top_nodes(1)[0]["gid"]
+view = engine.get_subgraph(gid, hops=1, start_date="2026-07-01", end_date="2026-07-10")
+operations = engine.get_transactions(gid, start_date="2026-07-01", end_date="2026-07-10")
+boundary = next(n for n in engine.get_analysis()["nodes"] if n["truncated_by_depth"])
+print(view["scope"], operations["totals"])
+print(boundary["gid"], boundary["role"], boundary["confidence"], boundary["why"])
+```
+
+Рёбра и суммы относятся к включительному диапазону дат, роли и оценки узлов сохраняют смысл полного анализа. У узла на границе отсутствие исходящих сопровождается ограничением наблюдаемости; оно само по себе не назначает terminal. Код выбора boundary рассчитан на предоставленный пример, где такие узлы есть.
+
+## Четвёртая минута — целевое расследование
+
+Откройте `out-demo/investigation_checkpoint.json`, затем `investigation.json`: reason → action → вычисленный evidence → hypothesis. Покажите предел трёх автоматических и пяти общих шагов, сравнение ролевых гипотез и ограничение `global_analysis_unchanged`. Пример имитирует явные продолжения после checkpoint; на платформе их инициирует аналитик.
+
+Чтобы показать новое измерение удаления вне первоначального Top-25, выберите узел со связями и `counterfactual.status="not_computed"`, затем вызовите `start_investigation(gid)`. Counterfactual попадёт в автоматические шаги. `role_recalculated` показывает пересчёт по новому измерению; изменение роли или рост confidence не гарантируются. Повторный обзор прежних фактов confidence не повышает.
+
+## Пятая минута — передача интегратору и обратная связь
+
+Откройте [контракт SDK](ai-engine-contract.md): строковые ID, методы выборки, переносимый снимок, ошибки и версии. Покажите `validation_report.json` и [отчёт проверки](validation.md) с версией и условиями измерений.
+
+```sh
+python ml/examples/review_results.py --analysis out --output out-review
+```
+
+Покажите 30 выбранных случаев и пустые поля аналитика. После реального разбора отчёт покажет полезность на рассмотренной части, расхождения ролей и долю заполненных меток. Пустые поля не превращаются в подтверждённые исходы. Порядок заполнения — в [инструкции аналитика](analyst-review.md).

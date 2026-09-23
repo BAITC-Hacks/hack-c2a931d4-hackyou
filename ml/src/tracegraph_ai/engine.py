@@ -25,6 +25,8 @@ class TraceGraph:
         self._validation = None
         self._model_info = None
         self._result_hash = None
+        self._transactions = []
+        self._evidence_index = None
 
     def analyze(self, nodes_path, edges_path, transactions_path, *, output_dir=None, progress=None) -> dict:
         from .anomaly import score_anomalies
@@ -37,6 +39,8 @@ class TraceGraph:
 
         self._analysis = None
         self._nodes = {}
+        self._transactions = []
+        self._evidence_index = None
         started = time.perf_counter()
         timings = {}
 
@@ -96,8 +100,10 @@ class TraceGraph:
         model_info["dependencies"] = dependencies
         result_hash = canonical_hash({"nodes": analysis["nodes"], "clusters": clusters})
         analysis["result_fingerprint"] = result_hash
+        transactions = json_safe(tables["transactions"][["tx_id", "src", "dst", "date", "sum_tiyn", "sum_kzt"]]
+                                 .to_dict(orient="records"))
         if output_dir is not None:
-            stage("export", lambda: export_results(output_dir, analysis, graph_bundle, report, model_info))
+            stage("export", lambda: export_results(output_dir, analysis, graph_bundle, report, model_info, transactions))
         summary["elapsed_seconds"] = round(time.perf_counter() - started, 4)
         report["runtime"] = {"total_seconds": summary["elapsed_seconds"], "stages_seconds": dict(timings),
                              "under_five_minutes": summary["elapsed_seconds"] < 300}
@@ -105,13 +111,71 @@ class TraceGraph:
             # Refresh compact reports/metadata after measuring all exports.
             write_json(Path(output_dir) / "validation_report.json", report)
             write_json(Path(output_dir) / "analysis_bundle.json", analysis)
+            from .persistence import write_manifest
+            write_manifest(output_dir, analysis)
         self._analysis = json_safe(analysis)
         self._nodes = {int(n["gid"]): n for n in self._analysis["nodes"]}
         self._graph_bundle = json_safe(graph_bundle)
         self._validation = json_safe(report)
         self._model_info = json_safe(model_info)
         self._result_hash = result_hash
+        self._transactions = transactions
+        self._build_evidence_index()
         return deepcopy(self._analysis)
+
+    def _build_evidence_index(self):
+        from .evidence import EvidenceIndex
+        self._evidence_index = EvidenceIndex(self._analysis["nodes"], self._graph_bundle, self._transactions)
+
+    @classmethod
+    def load_analysis(cls, directory):
+        """Restore an exported 0.2 snapshot without training or the source Parquet files."""
+        from .persistence import load_snapshot
+        bundles, config = load_snapshot(directory)
+        engine = cls(config)
+        engine._analysis = bundles["analysis_bundle"]
+        engine._nodes = {int(n["gid"]): n for n in engine._analysis["nodes"]}
+        engine._graph_bundle = bundles["graph_bundle"]
+        engine._validation = bundles["validation_report"]
+        engine._model_info = bundles["model_info"]
+        engine._transactions = bundles["transactions_bundle"]["transactions"]
+        engine._result_hash = engine._analysis["result_fingerprint"]
+        engine._build_evidence_index()
+        return engine
+
+    def save_analysis(self, directory) -> dict:
+        """Export a self-contained snapshot; use a separate directory for each analysis."""
+        from .exports import export_results
+        self._ready()
+        return export_results(directory, self._analysis, self._graph_bundle, self._validation,
+                              self._model_info, self._transactions)
+
+    def get_analysis(self) -> dict:
+        self._ready()
+        return deepcopy(self._analysis)
+
+    def _with_header(self, value):
+        return {"schema_version": SCHEMA_VERSION, "analysis_id": self._analysis["analysis_id"], **value}
+
+    def get_transactions(self, gid=None, *, direction="both", start_date=None, end_date=None,
+                         tx_ids=None, offset=0, limit=1000) -> dict:
+        self._ready()
+        if gid is not None:
+            gid = str(self._node(gid)["gid"])
+        return self._with_header(self._evidence_index.get_transactions(
+            gid, direction=direction, start_date=start_date, end_date=end_date,
+            tx_ids=tx_ids, offset=offset, limit=limit))
+
+    def get_subgraph(self, gid, *, hops=1, direction="both", start_date=None, end_date=None,
+                     max_nodes=200) -> dict:
+        gid = str(self._node(gid)["gid"])
+        return self._with_header(self._evidence_index.get_subgraph(
+            gid, hops=hops, direction=direction, start_date=start_date, end_date=end_date, max_nodes=max_nodes))
+
+    def explain_node(self, gid, *, max_paths=3, max_hops=8, max_transactions=100) -> dict:
+        gid = str(self._node(gid)["gid"])
+        return self._with_header(self._evidence_index.explain_node(
+            gid, max_paths=max_paths, max_hops=max_hops, max_transactions=max_transactions))
 
     def _ready(self):
         if self._analysis is None:
@@ -137,7 +201,7 @@ class TraceGraph:
         node = deepcopy(self._node(gid))
         node["schema_version"] = SCHEMA_VERSION
         node["analysis_id"] = self._analysis["analysis_id"]
-        node["best_next_evidence"] = best_next_evidence(node)
+        node["best_next_evidence"] = best_next_evidence(node, context_available=True)
         return node
 
     def get_top_nodes(self, limit=20) -> list[dict]:
@@ -171,7 +235,7 @@ class TraceGraph:
 
     def start_investigation(self, gid) -> dict:
         from .investigation import start
-        return start(self._node(gid), self._analysis["analysis_id"], self._result_hash)
+        return start(self._node(gid), self._analysis["analysis_id"], self._result_hash, context=self)
 
     def continue_investigation(self, branch_state) -> dict:
         from .investigation import continue_branch
@@ -179,4 +243,4 @@ class TraceGraph:
         if not isinstance(branch_state, dict) or "target_gid" not in branch_state:
             raise InvestigationStateError("branch_state must contain target_gid")
         node = self._node(branch_state["target_gid"])
-        return continue_branch(branch_state, node, self._analysis["analysis_id"], self._result_hash)
+        return continue_branch(branch_state, node, self._analysis["analysis_id"], self._result_hash, context=self)
